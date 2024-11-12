@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import dynamic from 'next/dynamic';
-import styles from './Form.module.css';
+import styles from '../styles/Form.module.css';
+import { useRouter } from 'next/router';  // Para navegação
+
 
 // Importa o FormComponent dinamicamente para desativar o SSR
-const FormComponent = dynamic(() => import('./FormCOmponent'), { ssr: false });
+const FormComponent = dynamic(() => import('./FormComponent'), { ssr: false });
 
 
 export default function Form() {
+  
   const [formData, setFormData] = useState({
     goal: '',
     stateImportant: '',
@@ -35,6 +39,8 @@ export default function Form() {
     email: '',  // Novo campo de email
   });
 
+  const router = useRouter();  // Utilize useRouter aqui, dentro do componente funcional
+
   const handleInputChange = (name, value) => {
     setFormData((prevData) => ({ ...prevData, [name]: value }));
   };
@@ -51,22 +57,16 @@ export default function Form() {
   };
 
   return (
+    
     <form className={styles.formContainer} onSubmit={handleSubmit}>
+      
       <h1 className={styles.formTitle}>Questionário de Intenção de Compra de Imóvel de Leilão</h1>
 
-      <div className={styles.formGroup}>
-        <label>E-mail para confirmação:</label>
-        <input
-          type="email"
-          value={formData.email}
-          onChange={(e) => handleInputChange('email', e.target.value)}
-          required
-        />
-      </div>
+      
 
 
       <div className={styles.formGroup}>
-        <label>1 - Qual é o objetivo da sua arrematação?</label>
+        <label> Qual é o objetivo da sua arrematação?</label>
         <select onChange={(e) => handleInputChange('goal', e.target.value)} value={formData.goal}>
           <option value="">Selecione</option>
           <option value="moradia">Para moradia própria</option>
@@ -77,7 +77,7 @@ export default function Form() {
       </div>
 
       <div className={styles.formGroup}>
-        <label>2 - O Estado do imóvel é importante para você?</label>
+        <label> O Estado do imóvel é importante para você?</label>
         <select onChange={(e) => handleInputChange('stateImportant', e.target.value)} value={formData.stateImportant}>
           <option value="">Selecione</option>
           <option value="sim">Sim</option>
@@ -90,7 +90,7 @@ export default function Form() {
       )}
 
       <div className={styles.formGroup}>
-        <label>6 - Características do imóvel que você busca</label>
+        <label> Características do imóvel que você busca</label>
         <div>
           {["Casa", "Apartamento", "Terreno", "Imóvel comercial", "Prédio", "Vaga de Garagem"].map(type => (
             <label key={type}>
@@ -112,15 +112,15 @@ export default function Form() {
       </div>
 
       <div className={styles.formGroup}>
-        <label>7 - Metragem mínima:</label>
+        <label>Metragem mínima:</label>
         <input type="number" onChange={(e) => handleInputChange('minArea', e.target.value)} value={formData.minArea} />
 
-        <label>8 - Metragem máxima:</label>
+        <label>Metragem máxima:</label>
         <input type="number" onChange={(e) => handleInputChange('maxArea', e.target.value)} value={formData.maxArea} />
       </div>
 
       <div className={styles.formGroup}>
-        <label>9 - Vagas de garagem:</label>
+        <label> Vagas de garagem:</label>
         <select onChange={(e) => handleInputChange('garageSpaces', e.target.value)} value={formData.garageSpaces}>
           <option value="">Selecione</option>
           <option value="1+">1+</option>
@@ -129,7 +129,7 @@ export default function Form() {
           <option value="4+">4+</option>
         </select>
 
-        <label>10 - Quartos:</label>
+        <label> Quartos:</label>
         <select onChange={(e) => handleInputChange('rooms', e.target.value)} value={formData.rooms}>
           <option value="">Selecione</option>
           <option value="1+">1+</option>
@@ -138,7 +138,7 @@ export default function Form() {
           <option value="4+">4+</option>
         </select>
 
-        <label>11 - Banheiros:</label>
+        <label> Banheiros:</label>
         <select onChange={(e) => handleInputChange('bathrooms', e.target.value)} value={formData.bathrooms}>
           <option value="">Selecione</option>
           <option value="1+">1+</option>
@@ -149,7 +149,7 @@ export default function Form() {
       </div>
 
       <div className={styles.formGroup}>
-        <label>12 - Infraestrutura indispensável:</label>
+        <label> Infraestrutura indispensável:</label>
         <div>
           {["Academia", "Churrasqueira", "Piscina", "Playground", "Quadra poliesportiva", "Salão de festas", "Sauna", "Elevador", "Portaria 24h"].map(item => (
             <label key={item}>
@@ -242,14 +242,15 @@ export default function Form() {
           </>
         )}
       </div>
-
+      <div className={styles.formGroup}>
       <label>De quanto você dispõe para aportes mensais (eventualidades e custos fixos)?</label>
-        <input
+        <input 
           type="number"
           placeholder="Valor que dispõe"
           value={formData.monthlyContribution}
           onChange={(e) => handleInputChange('monthlyContribution', e.target.value)}
         />
+        </div>
 
       {/* Contratação da Assessoria */}
       <div className={styles.formGroup}>
@@ -270,6 +271,16 @@ export default function Form() {
           value={formData.additionalInfo}
           onChange={(e) => handleInputChange('additionalInfo', e.target.value)}
           rows="4"
+        />
+      </div>
+
+      <div className={styles.formGroup}>
+        <label>E-mail para confirmação:</label>
+        <input className={styles.email}
+          type="email"
+          value={formData.email}
+          onChange={(e) => handleInputChange('email', e.target.value)}
+          required
         />
       </div>
 

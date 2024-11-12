@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import axios from 'axios';
 import Select from 'react-select';
-import styles from './Form.module.css';
+import styles from '../styles/Form.module.css';
 
 export default function FormComponent({ formData, setFormData }) {
   const { selectedStates, selectedCities, selectedNeighborhoods } = formData;
@@ -10,7 +10,9 @@ export default function FormComponent({ formData, setFormData }) {
     axios.get('https://servicodados.ibge.gov.br/api/v1/localidades/estados')
       .then(response => setFormData(prevData => ({
         ...prevData,
-        states: response.data.map(state => ({ value: state.id, label: state.nome }))
+        states: response.data
+          .map(state => ({ value: state.id, label: state.nome }))
+          .sort((a, b) => a.label.localeCompare(b.label)) // Ordena os estados
       })))
       .catch(error => console.error("Erro ao carregar os estados:", error));
   }, [setFormData]);
@@ -26,7 +28,9 @@ export default function FormComponent({ formData, setFormData }) {
             ...prevData,
             cities: {
               ...prevData.cities,
-              [stateId]: response.data.map(city => ({ value: city.id, label: city.nome }))
+              [stateId]: response.data
+                .map(city => ({ value: city.id, label: city.nome }))
+                .sort((a, b) => a.label.localeCompare(b.label)) // Ordena as cidades
             }
           })))
           .catch(error => console.error(`Erro ao carregar as cidades do estado ${stateId}:`, error));
@@ -43,16 +47,23 @@ export default function FormComponent({ formData, setFormData }) {
       }
     }));
 
+    // Verifique se os bairros estão sendo carregados corretamente
     selectedOptions.forEach(city => {
       if (!formData.neighborhoods[city.value]) {
+        console.log(`Carregando bairros para a cidade: ${city.label}`); // Adicione o log para depuração
+
         axios.get(`https://servicodados.ibge.gov.br/api/v1/localidades/municipios/${city.value}/distritos`)
-          .then(response => setFormData(prevData => ({
-            ...prevData,
-            neighborhoods: {
-              ...prevData.neighborhoods,
-              [city.value]: response.data.map(neighborhood => ({ value: neighborhood.id, label: neighborhood.nome }))
-            }
-          })))
+          .then(response => {
+            setFormData(prevData => ({
+              ...prevData,
+              neighborhoods: {
+                ...prevData.neighborhoods,
+                [city.value]: response.data
+                  .map(neighborhood => ({ value: neighborhood.id, label: neighborhood.nome }))
+                  .sort((a, b) => a.label.localeCompare(b.label)) // Ordena os bairros
+              }
+            }));
+          })
           .catch(error => console.error(`Erro ao carregar os bairros da cidade ${city.value}:`, error));
       }
     });
@@ -72,7 +83,7 @@ export default function FormComponent({ formData, setFormData }) {
     <div>
       {/* Multi-select dropdown para seleção dos Estados */}
       <div className={styles.formGroup}>
-        <label>3 - Selecione os Estados de interesse:</label>
+        <label>Selecione os Estados de interesse:</label>
         <Select
           isMulti
           options={formData.states}

@@ -7,23 +7,22 @@ export default async function handler(req, res) {
 
         try {
             const transporter = nodemailer.createTransport({
-                service: 'gmail', // ou outro serviço de email
+                service: 'gmail',
                 auth: {
                     user: process.env.EMAIL_USER,
                     pass: process.env.EMAIL_PASS,
                 },
             });
 
-            // Formatação do e-mail para o administrador
             const adminMessage = `
-        Novo formulário de intenção de compra de imóvel.
-        Protocolo: ${protocolo}
-        
-        Dados:
-        ${Object.keys(formData)
+            Novo formulário de intenção de compra de imóvel.
+            Protocolo: ${protocolo}
+            
+            Dados:
+            ${Object.keys(formData)
                     .map((key) => `${key}: ${JSON.stringify(formData[key], null, 2)}`)
                     .join('\n')}
-      `;
+            `;
 
             // Envia e-mail para o administrador
             await transporter.sendMail({
