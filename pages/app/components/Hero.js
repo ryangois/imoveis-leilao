@@ -22,8 +22,12 @@ export default function Hero() {
       </header>
       <main className={styles.mainContent}>
         <div className={styles.textContainer}>
+        <div className={styles.imageContainer}>
+          <img src="gif.gif" alt="Residências" />
           <h2>Descubra as melhores residências</h2>
-          <p>Encontre residências que combinam com você com muita facilidade. Esqueça todas as dificuldades em encontrar um lar ideal para você.</p>
+        </div>
+          
+          
           <div className={styles.stats}>
             <div>
               <span>330mil+</span>
@@ -41,9 +45,6 @@ export default function Hero() {
           <button className={styles.exploreButton} onClick={handleButtonClick}>
             Explorar Residências
           </button>
-        </div>
-        <div className={styles.imageContainer}>
-          <img src="/path/to/your/image.jpg" alt="Residências" />
         </div>
       </main>
     </div>
