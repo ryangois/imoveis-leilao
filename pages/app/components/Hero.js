@@ -1,6 +1,7 @@
 import React from 'react';
 import { useRouter } from 'next/router';
 import styles from '../styles/Hero.module.css';
+import Image from 'next/image';
 
 export default function Hero() {
   const router = useRouter();  // Utilize useRouter aqui, dentro do componente funcional
@@ -22,12 +23,17 @@ export default function Hero() {
       </header>
       <main className={styles.mainContent}>
         <div className={styles.textContainer}>
-        <div className={styles.imageContainer}>
-          <img src="gif.gif" alt="Residências" />
-          <h2>Descubra as melhores residências</h2>
-        </div>
-          
-          
+          <div className={styles.imageContainer}>
+            <Image
+              src="gif.gif"
+              alt="Residências"
+              width={600}
+              height={400}
+            />
+            <h2>Descubra as melhores residências</h2>
+          </div>
+
+
           <div className={styles.stats}>
             <div>
               <span>330mil+</span>
