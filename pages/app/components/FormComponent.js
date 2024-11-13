@@ -7,17 +7,14 @@ export default function FormComponent({ formData, setFormData }) {
   const { selectedStates, selectedCities, selectedNeighborhoods } = formData;
 
   useEffect(() => {
-    // Verifica se o código está sendo executado no lado do cliente antes de fazer a requisição
-    if (typeof window !== "undefined") {
-      axios.get('https://servicodados.ibge.gov.br/api/v1/localidades/estados')
-        .then(response => setFormData(prevData => ({
-          ...prevData,
-          states: response.data
-            .map(state => ({ value: state.id, label: state.nome }))
-            .sort((a, b) => a.label.localeCompare(b.label)) // Ordena os estados
-        })))
-        .catch(error => console.error("Erro ao carregar os estados:", error));
-    }
+    axios.get('https://servicodados.ibge.gov.br/api/v1/localidades/estados')
+      .then(response => setFormData(prevData => ({
+        ...prevData,
+        states: response.data
+          .map(state => ({ value: state.id, label: state.nome }))
+          .sort((a, b) => a.label.localeCompare(b.label)) // Ordena os estados
+      })))
+      .catch(error => console.error("Erro ao carregar os estados:", error));
   }, [setFormData]);
 
   const handleStateChange = (selectedOptions) => {
@@ -26,19 +23,17 @@ export default function FormComponent({ formData, setFormData }) {
 
     selectedIds.forEach(stateId => {
       if (!formData.cities[stateId]) {
-        if (typeof window !== "undefined") {
-          axios.get(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${stateId}/municipios`)
-            .then(response => setFormData(prevData => ({
-              ...prevData,
-              cities: {
-                ...prevData.cities,
-                [stateId]: response.data
-                  .map(city => ({ value: city.id, label: city.nome }))
-                  .sort((a, b) => a.label.localeCompare(b.label)) // Ordena as cidades
-              }
-            })))
-            .catch(error => console.error(`Erro ao carregar as cidades do estado ${stateId}:`, error));
-        }
+        axios.get(https://servicodados.ibge.gov.br/api/v1/localidades/estados/${stateId}/municipios)
+          .then(response => setFormData(prevData => ({
+            ...prevData,
+            cities: {
+              ...prevData.cities,
+              [stateId]: response.data
+                .map(city => ({ value: city.id, label: city.nome }))
+                .sort((a, b) => a.label.localeCompare(b.label)) // Ordena as cidades
+            }
+          })))
+          .catch(error => console.error(Erro ao carregar as cidades do estado ${stateId}:, error));
       }
     });
   };
@@ -52,23 +47,24 @@ export default function FormComponent({ formData, setFormData }) {
       }
     }));
 
+    // Verifique se os bairros estão sendo carregados corretamente
     selectedOptions.forEach(city => {
       if (!formData.neighborhoods[city.value]) {
-        if (typeof window !== "undefined") {
-          axios.get(`https://servicodados.ibge.gov.br/api/v1/localidades/municipios/${city.value}/distritos`)
-            .then(response => {
-              setFormData(prevData => ({
-                ...prevData,
-                neighborhoods: {
-                  ...prevData.neighborhoods,
-                  [city.value]: response.data
-                    .map(neighborhood => ({ value: neighborhood.id, label: neighborhood.nome }))
-                    .sort((a, b) => a.label.localeCompare(b.label)) // Ordena os bairros
-                }
-              }));
-            })
-            .catch(error => console.error(`Erro ao carregar os bairros da cidade ${city.value}:`, error));
-        }
+        console.log(Carregando bairros para a cidade: ${city.label}); // Adicione o log para depuração
+
+        axios.get(https://servicodados.ibge.gov.br/api/v1/localidades/municipios/${city.value}/distritos)
+          .then(response => {
+            setFormData(prevData => ({
+              ...prevData,
+              neighborhoods: {
+                ...prevData.neighborhoods,
+                [city.value]: response.data
+                  .map(neighborhood => ({ value: neighborhood.id, label: neighborhood.nome }))
+                  .sort((a, b) => a.label.localeCompare(b.label)) // Ordena os bairros
+              }
+            }));
+          })
+          .catch(error => console.error(Erro ao carregar os bairros da cidade ${city.value}:, error));
       }
     });
   };
@@ -85,6 +81,7 @@ export default function FormComponent({ formData, setFormData }) {
 
   return (
     <div>
+      {/* Multi-select dropdown para seleção dos Estados */}
       <div className={styles.formGroup}>
         <label>Selecione os Estados de interesse:</label>
         <Select
@@ -97,6 +94,7 @@ export default function FormComponent({ formData, setFormData }) {
         />
       </div>
 
+      {/* Multi-select dropdown para seleção de Cidades para cada Estado selecionado */}
       {selectedStates.map(state => (
         <div key={state.value} className={styles.formGroup}>
           <label>Selecione as Cidades de {state.label}:</label>
