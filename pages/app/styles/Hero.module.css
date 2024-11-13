@@ -2,12 +2,12 @@
   color: #333;
   padding: 20px;
   min-height: 100vh;
-  display: flex;
+  display: fixed;
+  top: 0;
   flex-direction: column;
   justify-content: center;
   margin: 0;
   text-align: center;
-  margin-top: -150px;
 }
 
 .header {
@@ -113,14 +113,12 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    margin-bottom: -300px;
   }
 
   .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: -400px;
     text-align: left;
   }
 
@@ -144,5 +142,10 @@
   .imageContainer img {
     width: 80%;
     margin-top: 20px;
+  }
+
+  .heroContainer {
+    display: fixed;
+    top: 0;
   }
 }
