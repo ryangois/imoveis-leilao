@@ -1,18 +1,4 @@
 
-html,
-body {
-  margin: 0;
-  padding: 0;
-  height: 100%; /* Garante que ocupe toda a altura da tela */
-}
-
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
 
 * {
   box-sizing: border-box;
