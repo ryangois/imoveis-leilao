@@ -1,5 +1,5 @@
 // lib/ibge.js
-
+import React from 'react';
 // Função para buscar estados
 export async function fetchEstados() {
     const response = await fetch('https://servicodados.ibge.gov.br/api/v1/localidades/estados');
