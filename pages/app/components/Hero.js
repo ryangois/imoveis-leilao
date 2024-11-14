@@ -12,7 +12,7 @@ export default function Hero() {
   return (
     <div className={styles.heroContainer}>
       <header className={styles.header}>
-        <h1>Acessoria Davi Franco</h1>
+        <h1>Assessoria Davi Franco</h1>
         <nav className={styles.nav}>
           <a href="#home">Home</a>
           <a href="#casas">Casas</a>
