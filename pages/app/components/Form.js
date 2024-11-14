@@ -2,19 +2,16 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import dynamic from 'next/dynamic';
 import styles from '../styles/Form.module.css';
-import { useRouter } from 'next/router';  // Para navegação
+import { useRouter } from 'next/router';
 
-
-// Importa o FormComponent dinamicamente para desativar o SSR
+// Dynamically import the FormComponent to disable SSR for this component
 const FormComponent = dynamic(() => import('./FormComponent'), { ssr: false });
 
-
 export default function Form() {
-  
   const [formData, setFormData] = useState({
     goal: '',
     stateImportant: '',
-    selectedStates: [],
+    selectedStates: [], // Ensures selectedStates is initialized as an empty array
     selectedCities: {},
     selectedNeighborhoods: {},
     propertyType: [],
@@ -36,10 +33,10 @@ export default function Form() {
     additionalInfo: '',
     cities: {},
     neighborhoods: {},
-    email: '',  // Novo campo de email
+    email: '', // Email field for confirmation
   });
 
-  const router = useRouter();  // Utilize useRouter aqui, dentro do componente funcional
+  const router = useRouter();
 
   const handleInputChange = (name, value) => {
     setFormData((prevData) => ({ ...prevData, [name]: value }));
@@ -57,16 +54,11 @@ export default function Form() {
   };
 
   return (
-    
     <form className={styles.formContainer} onSubmit={handleSubmit}>
-      
       <h1 className={styles.formTitle}>Questionário de Intenção de Compra de Imóvel de Leilão</h1>
 
-      
-
-
       <div className={styles.formGroup}>
-        <label> Qual é o objetivo da sua arrematação?</label>
+        <label>Qual é o objetivo da sua arrematação?</label>
         <select onChange={(e) => handleInputChange('goal', e.target.value)} value={formData.goal}>
           <option value="">Selecione</option>
           <option value="moradia">Para moradia própria</option>
@@ -77,7 +69,7 @@ export default function Form() {
       </div>
 
       <div className={styles.formGroup}>
-        <label> O Estado do imóvel é importante para você?</label>
+        <label>O Estado do imóvel é importante para você?</label>
         <select onChange={(e) => handleInputChange('stateImportant', e.target.value)} value={formData.stateImportant}>
           <option value="">Selecione</option>
           <option value="sim">Sim</option>
