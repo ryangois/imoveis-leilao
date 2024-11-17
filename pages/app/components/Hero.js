@@ -1,6 +1,7 @@
 import React from 'react';
 import { useRouter } from 'next/router';
 import styles from '../styles/Hero.module.css';
+import Image from 'next/image';
 
 export default function Hero() {
   const router = useRouter();  // Utilize useRouter aqui, dentro do componente funcional
@@ -10,43 +11,37 @@ export default function Hero() {
   };
 
   return (
-    <div className={styles.heroContainer}>
+    <section className={styles.hero}>
+      <div className={styles.heroText}>
       <header className={styles.header}>
         <h1>Assessoria Davi Franco</h1>
         <nav className={styles.nav}>
-          <a href="#home">Home</a>
-          <a href="#casas">Casas</a>
-          <a href="#valores">Valores</a>
+          <a href="#home">Início</a>
+          <a href="#casas">Sobre</a>
           <a href="#contato">Contato</a>
         </nav>
       </header>
-      <main className={styles.mainContent}>
-        <div className={styles.textContainer}>
-        <div className={styles.imageContainer}>
-          <img src="gif.gif" alt="Residências" />
-          <h2>Descubra as melhores residências</h2>
-        </div>
-          
-          
-          <div className={styles.stats}>
-            <div>
-              <span>330mil+</span>
-              <p>Produto Premium</p>
-            </div>
-            <div>
-              <span>150mil+</span>
-              <p>Para Solteiros</p>
-            </div>
-            <div>
-              <span>300mil+</span>
-              <p>Ideal para Casais</p>
-            </div>
+        <h1>Descubra as melhores residências</h1>
+        <p>Encontre residências que combinam com você com muita facilidade.</p>
+        <div className={styles.stats}>
+          <div className={styles.statItem}>
+            <h1 className={styles.statNumber}>330mil<span>+</span></h1>
+            <p className={styles.statText}>Produto Premium</p>
           </div>
-          <button className={styles.exploreButton} onClick={handleButtonClick}>
-            Explorar Residências
-          </button>
+          <div className={styles.statItem}>
+            <h1 className={styles.statNumber}>150mil<span>+</span></h1>
+            <p className={styles.statText}>Para Solteiros</p>
+          </div>
+          <div className={styles.statItem}>
+            <h1 className={styles.statNumber}>300mil<span>+</span></h1>
+            <p className={styles.statText}>Ideal para Casais</p>
+          </div>
         </div>
-      </main>
-    </div>
+        <button className={styles.exploreButton} onClick={handleButtonClick}>Explorar Residências</button>
+      </div>
+      <div className={styles.heroImage}>
+        <Image src="/6812cbb759774b33ae991835b9634289.jpg" alt="Residências" width={600} height={400} layout="responsive" priority />
+      </div>
+    </section>
   );
 }

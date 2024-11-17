@@ -4,19 +4,18 @@ import Select from 'react-select';
 import styles from '../styles/Form.module.css';
 
 export default function FormComponent({ formData, setFormData }) {
-  // Ensure formData is defined and provide default values to prevent destructuring errors
   const {
     selectedStates = [],
     selectedCities = {},
     selectedDistricts = {},
     selectedNeighborhoods = {},
-    states = [], // Default to empty array if states is not yet populated
+    states = [],
     cities = {},
     neighborhoods = {}
   } = formData || {}; // Default formData to empty if undefined
 
   useEffect(() => {
-    // 1. Load all states
+    // Load all states
     axios.get('https://servicodados.ibge.gov.br/api/v1/localidades/estados')
       .then(response => setFormData(prevData => ({
         ...prevData,
@@ -33,7 +32,7 @@ export default function FormComponent({ formData, setFormData }) {
 
     selectedIds.forEach(stateId => {
       if (!cities[stateId]) {
-        // 2. Load cities for each selected state
+        // Load cities for each selected state
         axios.get(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${stateId}/municipios`)
           .then(response => setFormData(prevData => ({
             ...prevData,
@@ -61,18 +60,15 @@ export default function FormComponent({ formData, setFormData }) {
 
     selectedOptions.forEach(city => {
       if (!(formData.districts && formData.districts[city.value])) {
-        console.log(`Loading districts for city: ${city.label}`);
-
-        // 3. Load districts for each selected city
+        // Load districts for each selected city
         axios.get(`https://servicodados.ibge.gov.br/api/v1/localidades/municipios/${city.value}/distritos`)
           .then(response => {
+            const districts = response.data.map(district => ({ value: district.id, label: district.nome }));
             setFormData(prevData => ({
               ...prevData,
               districts: {
                 ...prevData.districts,
-                [city.value]: response.data
-                  .map(district => ({ value: district.id, label: district.nome }))
-                  .sort((a, b) => a.label.localeCompare(b.label)) // Sort districts alphabetically
+                [city.value]: districts.length > 0 ? districts : [] // Only set districts if there are any
               }
             }));
           })
@@ -92,12 +88,9 @@ export default function FormComponent({ formData, setFormData }) {
 
     selectedOptions.forEach(district => {
       if (!neighborhoods[district.value]) {
-        console.log(`Loading neighborhoods for district: ${district.label}`);
-
-        // 4. Load neighborhoods for each selected district
+        // Load neighborhoods for each selected district
         axios.get(`https://servicodados.ibge.gov.br/api/v1/localidades/distritos/${district.value}/subdistritos`)
           .then(response => {
-            console.log(`Neighborhood data received for district ${district.label}:`, response.data); // Log neighborhood data
             setFormData(prevData => ({
               ...prevData,
               neighborhoods: {
@@ -121,6 +114,14 @@ export default function FormComponent({ formData, setFormData }) {
         [districtId]: selectedOptions || []
       }
     }));
+  };
+
+  // Handle moving to the next input field on "Enter" press
+  const handleKeyDown = (e, nextElement) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      nextElement.focus(); // Move focus to the next element
+    }
   };
 
   return (
@@ -156,12 +157,14 @@ export default function FormComponent({ formData, setFormData }) {
         (selectedCities[stateId] || []).map(city => (
           <div key={city.value} className={styles.formGroup}>
             <label>Selecione os Distritos de {city.label}:</label>
-            <Select
-              isMulti
-              options={formData.districts?.[city.value] || []}
-              value={selectedDistricts?.[city.value] || []}
-              onChange={(selectedOptions) => handleDistrictChange(city.value, selectedOptions)}
-            />
+            {formData.districts?.[city.value]?.length > 0 ? (
+              <Select
+                isMulti
+                options={formData.districts[city.value] || []}
+                value={selectedDistricts?.[city.value] || []}
+                onChange={(selectedOptions) => handleDistrictChange(city.value, selectedOptions)}
+              />
+            ) : null}
           </div>
         ))
       ))}
@@ -169,17 +172,21 @@ export default function FormComponent({ formData, setFormData }) {
       {/* Multi-select dropdown for selecting neighborhoods for each selected district */}
       {Object.keys(selectedDistricts || {}).map(cityId => (
         (selectedDistricts[cityId] || []).map(district => (
-          <div key={district.value} className={styles.formGroup}>
-            <label>Selecione os Bairros de {district.label}:</label>
-            <Select
-              isMulti
-              options={formData.neighborhoods?.[district.value] || []}
-              value={selectedNeighborhoods?.[district.value] || []}
-              onChange={(selectedOptions) => handleNeighborhoodChange(district.value, selectedOptions)}
-            />
-          </div>
+          // Verifica se existem bairros para esse distrito
+          formData.neighborhoods?.[district.value] && formData.neighborhoods[district.value].length > 0 ? (
+            <div key={district.value} className={styles.formGroup}>
+              <label>Selecione os Bairros de {district.label}:</label>
+              <Select
+                isMulti
+                options={formData.neighborhoods?.[district.value] || []}
+                value={selectedNeighborhoods?.[district.value] || []}
+                onChange={(selectedOptions) => handleNeighborhoodChange(district.value, selectedOptions)}
+              />
+            </div>
+          ) : null // Não exibe o campo se não houver bairros
         ))
       ))}
+
     </div>
   );
 }

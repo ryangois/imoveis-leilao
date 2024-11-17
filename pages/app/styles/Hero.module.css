@@ -1,13 +1,18 @@
-.heroContainer {
-  color: #333;
-  padding: 20px;
-  min-height: 100vh;
-  display: fixed;
-  top: 0;
-  flex-direction: column;
-  justify-content: center;
-  margin: 0;
-  text-align: center;
+/* Hero Section */
+.hero {
+  display: flex;
+  flex-direction: row;  /* Alinha os itens na horizontal */
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(170deg, hsl(0, 0%, 22%) 0%, hsl(0, 0%, 6%) 30%),
+              url('/path/to/your/image.jpg') no-repeat center center;  /* Adiciona o gradiente e a imagem de fundo */
+  color: #fff;
+  padding: 60px 20px;
+  border-radius: 20px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  margin: -25px;
+  text-align: left;  /* Alinha o texto à esquerda */
+  background-size: cover; /* Faz a imagem de fundo ocupar toda a área */
 }
 
 .header {
@@ -18,10 +23,16 @@
   text-align: left;
 }
 
+.nav a {
+  margin: 0 10px;
+  text-decoration: none;
+  color: #007bff;
+}
+
 .header h1 {
   font-size: 22px;
   font-weight: bold;
-  color: #333;
+  color: #f3f3f3;
   display: flex;
   align-items: center;
 }
@@ -36,116 +47,131 @@
   margin-right: 10px;
 }
 
-.nav a {
-  margin: 0 10px;
-  text-decoration: none;
-  color: #007bff;
+
+/* Ajustes adicionais para garantir o conteúdo da Hero section */
+.heroText {
+  max-width: 50%;  /* Limita o tamanho do texto */
 }
 
-.mainContent {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  margin-top: 50px;
-}
-
-.textContainer {
-  max-width: 50%;
-  text-align: center;
-}
-
-.textContainer h2 {
+.heroText h1 {
   font-size: 48px;
   font-weight: bold;
-  color: #333;
-  margin-top: 20px;
+  margin-bottom: 1rem;
 }
 
-.textContainer p {
+.heroText p {
   font-size: 18px;
-  color: #555;
-  margin: 20px 0;
+  margin-bottom: 2rem;
 }
 
 .stats {
   display: flex;
-  gap: 30px;
-  margin: 20px 0;
-  justify-content: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
 }
 
-.stats div {
+.statItem {
   text-align: center;
 }
 
-.stats span {
-  font-size: 28px;
+.statNumber {
+  font-size: 36px;
   font-weight: bold;
-  color: #007bff;
+  color: #fff;
+}
+
+.statNumber span {
+  color: #FF6F61; /* Highlight color for the numbers */
+}
+
+.statText {
+  font-size: 16px;
+  color: #aaa;
 }
 
 .exploreButton {
-  padding: 12px 24px;
-  font-size: 16px;
-  background-color: #28a745;
-  color: #fafafa;
+  background-color: #FF6F61;
+  color: white;
+  padding: 15px 30px;
+  font-size: 18px;
   border: none;
-  border-radius: 4px;
+  border-radius: 5px;
   cursor: pointer;
-  transition: background-color 0.3s ease;
-  margin-top: 20px;
+  transition: background-color 0.3s;
 }
 
 .exploreButton:hover {
-  background-color: #218838;
+  background-color: #d85947;
 }
 
-.imageContainer img {
-  width: 400px;
-  height: auto;
-  border-radius: 10px;
-  object-fit: cover;
+.heroImage {
+  max-width: 45%;  /* Ajuste da imagem para não ocupar muito espaço */
+  position: relative;
 }
 
-@media (max-width: 768px) {
-  .mainContent {
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+.heroImage img {
+  border-radius: 15px;
+  width: 100%; /* Garante que a imagem ocupe toda a largura disponível */
+}
+
+/*========================= RESPONSIVE STYLES =========================*/
+
+/* For small devices */
+@media screen and (max-width: 768px) {
+  .hero {
+    flex-direction: column;  /* Muda para coluna em telas menores */
+    text-align: center;
+    padding: 40px 20px;
+    margin: 0;
+    margin-top: -10px;
   }
 
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    text-align: left;
+  .heroText {
+    max-width: 100%;
   }
 
-  .textContainer {
-    max-width: 90%;
+  .heroImage {
+    margin-top: 20px;
+    max-width: 80%;
   }
 
-  .textContainer h2 {
-    font-size: 30px;
+  .heroText h1 {
+    font-size: 32px;
+  }
+
+  .heroText p {
+    font-size: 16px;
   }
 
   .stats {
     flex-direction: column;
-    gap: 20px;
+    align-items: center;
   }
 
-  .stats span {
-    font-size: 24px;
+  .statItem {
+    margin-bottom: 15px;
+  }
+}
+
+/* For large devices */
+@media screen and (min-width: 1020px) {
+  .hero {
+    padding: 60px 50px;
   }
 
-  .imageContainer img {
-    width: 80%;
-    margin-top: 20px;
+  .heroText h1 {
+    font-size: 60px;
   }
 
-  .heroContainer {
-    display: fixed;
-    top: 0;
+  .heroText p {
+    font-size: 20px;
+  }
+
+  .stats {
+    gap: 50px;
+  }
+
+  .heroImage {
+    max-width: 600px;
   }
 }
