@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import dynamic from 'next/dynamic';
 import styles from '../styles/Form.module.css';
-import { useRouter } from 'next/router';
 
 // Dynamically import the FormComponent to disable SSR for this component
 const FormComponent = dynamic(() => import('./FormComponent'), { ssr: false });
@@ -11,7 +10,7 @@ export default function Form() {
   const [formData, setFormData] = useState({
     goal: '',
     stateImportant: '',
-    selectedStates: [], // Ensures selectedStates is initialized as an empty array
+    selectedStates: [],
     selectedCities: {},
     selectedNeighborhoods: {},
     propertyType: [],
@@ -31,12 +30,11 @@ export default function Form() {
     monthlyContribution: '',
     advisoryPhase: '',
     additionalInfo: '',
-    cities: {},
-    neighborhoods: {},
-    email: '', // Email field for confirmation
+    email: '',
   });
 
-  const router = useRouter();
+  const [loading, setLoading] = useState(false); // State to handle loading
+  const [message, setMessage] = useState(null); // State for status messages
 
   const handleInputChange = (name, value) => {
     setFormData((prevData) => ({ ...prevData, [name]: value }));
@@ -44,23 +42,23 @@ export default function Form() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setMessage(null);
+
     try {
       const response = await axios.post('/api/sendEmail', formData);
-      alert(`Formulário submetido com sucesso! Protocolo: ${response.data.protocolo}`);
+      setMessage({
+        type: 'success',
+        text: `Formulário submetido com sucesso! Protocolo: ${response.data.protocolo}`,
+      });
     } catch (error) {
       console.error('Erro ao enviar o formulário:', error);
-      alert('Erro ao enviar o formulário. Tente novamente.');
-    }
-  };
-
-  const handleKeyDown = (e, nextElement) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      
-      // Verifica se nextElement não é null ou undefined antes de chamar focus()
-      if (nextElement) {
-        nextElement.focus(); // Move focus to the next element
-      }
+      setMessage({
+        type: 'error',
+        text: 'Erro ao enviar o formulário. Tente novamente.',
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -68,12 +66,20 @@ export default function Form() {
     <form className={styles.formContainer} onSubmit={handleSubmit}>
       <h1 className={styles.formTitle}>Questionário de Intenção de Compra de Imóvel de Leilão</h1>
 
+      {message && (
+        <div className={`${styles.message} ${styles[message.type]}`}>
+          {message.text}
+        </div>
+      )}
+
+      {loading && <div className={styles.loading}>Enviando...</div>}
+
+      {/* Objetivo */}
       <div className={styles.formGroup}>
         <label>Qual é o objetivo da sua arrematação?</label>
-        <select 
-          onChange={(e) => handleInputChange('goal', e.target.value)} 
+        <select
+          onChange={(e) => handleInputChange('goal', e.target.value)}
           value={formData.goal}
-          onKeyDown={(e) => handleKeyDown(e, document.getElementById('stateImportant'))} // Move to next field (stateImportant)
         >
           <option value="">Selecione</option>
           <option value="moradia">Para moradia própria</option>
@@ -83,13 +89,12 @@ export default function Form() {
         </select>
       </div>
 
+      {/* Estado Importante */}
       <div className={styles.formGroup}>
         <label>O Estado do imóvel é importante para você?</label>
-        <select 
-          onChange={(e) => handleInputChange('stateImportant', e.target.value)} 
+        <select
+          onChange={(e) => handleInputChange('stateImportant', e.target.value)}
           value={formData.stateImportant}
-          id="stateImportant"
-          onKeyDown={(e) => handleKeyDown(e, document.getElementById('propertyType'))} // Move to next field (propertyType)
         >
           <option value="">Selecione</option>
           <option value="sim">Sim</option>
@@ -97,58 +102,58 @@ export default function Form() {
         </select>
       </div>
 
-      {formData.stateImportant === "sim" && (
+      {formData.stateImportant === 'sim' && (
         <FormComponent formData={formData} setFormData={setFormData} />
       )}
 
+      {/* Características do Imóvel */}
       <div className={styles.formGroup}>
-        <label>Características do imóvel que você busca</label>
+        <label>Características do imóvel que você busca:</label>
         <div>
-          {["Casa", "Apartamento", "Terreno", "Imóvel comercial", "Prédio", "Vaga de Garagem"].map(type => (
-            <label key={type}>
-              <input
-                type="checkbox"
-                value={type}
-                checked={formData.propertyType.includes(type)}
-                onChange={(e) => {
-                  const selected = e.target.checked
-                    ? [...formData.propertyType, type]
-                    : formData.propertyType.filter(t => t !== type);
-                  handleInputChange('propertyType', selected);
-                }}
-                onKeyDown={(e) => handleKeyDown(e, document.getElementById('minArea'))} // Move to next field (minArea)
-              />
-              {type}
-            </label>
-          ))}
+          {['Casa', 'Apartamento', 'Terreno', 'Imóvel comercial', 'Prédio', 'Vaga de Garagem'].map(
+            (type) => (
+              <label key={type}>
+                <input
+                  type="checkbox"
+                  value={type}
+                  checked={formData.propertyType.includes(type)}
+                  onChange={(e) => {
+                    const selected = e.target.checked
+                      ? [...formData.propertyType, type]
+                      : formData.propertyType.filter((t) => t !== type);
+                    handleInputChange('propertyType', selected);
+                  }}
+                />
+                {type}
+              </label>
+            )
+          )}
         </div>
       </div>
 
+      {/* Metragem */}
       <div className={styles.formGroup}>
         <label>Metragem mínima:</label>
-        <input 
-          type="number" 
-          onChange={(e) => handleInputChange('minArea', e.target.value)} 
+        <input
+          type="number"
+          onChange={(e) => handleInputChange('minArea', e.target.value)}
           value={formData.minArea}
-          onKeyDown={(e) => handleKeyDown(e, document.getElementById('maxArea'))} // Move to next field (maxArea)
         />
 
         <label>Metragem máxima:</label>
-        <input 
-          type="number" 
-          onChange={(e) => handleInputChange('maxArea', e.target.value)} 
+        <input
+          type="number"
+          onChange={(e) => handleInputChange('maxArea', e.target.value)}
           value={formData.maxArea}
-          onKeyDown={(e) => handleKeyDown(e, document.getElementById('garageSpaces'))} // Move to next field (garageSpaces)
         />
       </div>
 
+      {/* Garagem, Quartos e Banheiros */}
       <div className={styles.formGroup}>
         <label>Vagas de garagem:</label>
-        <select 
-          onChange={(e) => handleInputChange('garageSpaces', e.target.value)} 
+        <select
+          onChange={(e) => handleInputChange('garageSpaces', e.target.value)}
           value={formData.garageSpaces}
-          id="garageSpaces"
-          onKeyDown={(e) => handleKeyDown(e, document.getElementById('rooms'))} // Move to next field (rooms)
         >
           <option value="">Selecione</option>
           <option value="1+">1+</option>
@@ -158,11 +163,9 @@ export default function Form() {
         </select>
 
         <label>Quartos:</label>
-        <select 
-          onChange={(e) => handleInputChange('rooms', e.target.value)} 
+        <select
+          onChange={(e) => handleInputChange('rooms', e.target.value)}
           value={formData.rooms}
-          id="rooms"
-          onKeyDown={(e) => handleKeyDown(e, document.getElementById('bathrooms'))} // Move to next field (bathrooms)
         >
           <option value="">Selecione</option>
           <option value="1+">1+</option>
@@ -172,10 +175,9 @@ export default function Form() {
         </select>
 
         <label>Banheiros:</label>
-        <select 
-          onChange={(e) => handleInputChange('bathrooms', e.target.value)} 
+        <select
+          onChange={(e) => handleInputChange('bathrooms', e.target.value)}
           value={formData.bathrooms}
-          id="bathrooms"
         >
           <option value="">Selecione</option>
           <option value="1+">1+</option>
@@ -185,20 +187,30 @@ export default function Form() {
         </select>
       </div>
 
+      {/* Infraestrutura */}
       <div className={styles.formGroup}>
         <label>Infraestrutura indispensável:</label>
         <div>
-          {["Academia", "Churrasqueira", "Piscina", "Playground", "Quadra poliesportiva", "Salão de festas", "Sauna", "Elevador", "Portaria 24h"].map(item => (
+          {[
+            'Academia',
+            'Churrasqueira',
+            'Piscina',
+            'Playground',
+            'Quadra poliesportiva',
+            'Salão de festas',
+            'Sauna',
+            'Elevador',
+            'Portaria 24h',
+          ].map((item) => (
             <label key={item}>
               <input
                 type="checkbox"
                 value={item}
-                className={styles.inputField}
                 checked={formData.infrastructure.includes(item)}
                 onChange={(e) => {
                   const selected = e.target.checked
                     ? [...formData.infrastructure, item]
-                    : formData.infrastructure.filter(i => i !== item);
+                    : formData.infrastructure.filter((i) => i !== item);
                   handleInputChange('infrastructure', selected);
                 }}
               />
@@ -214,10 +226,11 @@ export default function Form() {
         />
       </div>
 
+      {/* Pagamento */}
       <div className={styles.formGroup}>
         <label>Preferência por pagamento:</label>
-        <select 
-          onChange={(e) => handleInputChange('paymentPreference', e.target.value)} 
+        <select
+          onChange={(e) => handleInputChange('paymentPreference', e.target.value)}
           value={formData.paymentPreference}
         >
           <option value="">Selecione</option>
@@ -226,104 +239,25 @@ export default function Form() {
           <option value="financiado">Financiado</option>
           <option value="fgts">Utiliza FGTS</option>
         </select>
-
-        {formData.paymentPreference === "fgts" && (
-          <input
-            type="number"
-            placeholder="Valor disponível em FGTS"
-            value={formData.fgtsValue}
-            onChange={(e) => handleInputChange('fgtsValue', e.target.value)}
-          />
-        )}
-
-        {formData.paymentPreference === "financiado" && (
-          <>
-            <label>Já possui crédito aprovado?</label>
-            <select 
-              onChange={(e) => handleInputChange('creditApproved', e.target.value)} 
-              value={formData.creditApproved}
-            >
-              <option value="">Selecione</option>
-              <option value="sim">Sim</option>
-              <option value="nao">Não</option>
-            </select>
-
-            {formData.creditApproved === "sim" && (
-              <div>
-                <label>Em qual(is) instituição(ões):</label>
-                {["Caixa Econômica Federal", "Banco do Brasil", "Bradesco", "Itaú", "Santander", "C6", "Nubank", "Outra instituição"].map(inst => (
-                  <div key={inst}>
-                    <label>
-                      <input
-                        type="checkbox"
-                        value={inst}
-                        checked={formData.approvedInstitutions.includes(inst)}
-                        onChange={(e) => {
-                          const selected = e.target.checked
-                            ? [...formData.approvedInstitutions, inst]
-                            : formData.approvedInstitutions.filter(i => i !== inst);
-                          handleInputChange('approvedInstitutions', selected);
-                        }}
-                      />
-                      {inst}
-                    </label>
-                    {formData.approvedInstitutions.includes(inst) && (
-                      <input
-                        type="number"
-                        placeholder={`Crédito aprovado - ${inst}`}
-                        value={formData.institutionCreditValues[inst] || ''}
-                        onChange={(e) => {
-                          const values = { ...formData.institutionCreditValues, [inst]: e.target.value };
-                          handleInputChange('institutionCreditValues', values);
-                        }}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        )}
       </div>
 
-      <div className={styles.formGroup}>
-        <label>De quanto você dispõe para aportes mensais (eventualidades e custos fixos)?</label>
-        <input 
-          type="number"
-          placeholder="Valor que dispõe"
-          value={formData.monthlyContribution}
-          onChange={(e) => handleInputChange('monthlyContribution', e.target.value)}
-        />
-      </div>
-
-      {/* Contratação da Assessoria */}
+      {/* Mais Campos */}
       <div className={styles.formGroup}>
         <label>Você pretende fazer a contratação da assessoria apenas da fase 1, ou fases 1 e 2?</label>
-        <select 
-          onChange={(e) => handleInputChange('advisoryPhase', e.target.value)} 
+        <select
+          onChange={(e) => handleInputChange('advisoryPhase', e.target.value)}
           value={formData.advisoryPhase}
         >
           <option value="">Selecione</option>
           <option value="fase1">Fase 1</option>
           <option value="fase1_e_2">Fases 1 e 2</option>
         </select>
-        <p>Obs: Fase 1 vai desde a análise do imóvel até a desocupação e registro em seu nome. A fase 2 vai desde a reforma até a venda do imóvel.</p>
       </div>
 
-      {/* Informações adicionais */}
-      <div className={styles.formGroup}>
-        <label> Existe mais alguma informação ou observação que gostaria de adicionar?</label>
-        <textarea
-          placeholder="Escreva suas observações aqui"
-          value={formData.additionalInfo}
-          onChange={(e) => handleInputChange('additionalInfo', e.target.value)}
-          rows="4"
-        />
-      </div>
-
+      {/* E-mail */}
       <div className={styles.formGroup}>
         <label>E-mail para confirmação:</label>
-        <input className={styles.email}
+        <input
           type="email"
           value={formData.email}
           onChange={(e) => handleInputChange('email', e.target.value)}
@@ -331,8 +265,9 @@ export default function Form() {
         />
       </div>
 
-      {/* Botão de Submissão */}
-      <button type="submit" className={styles.submitButton}>Enviar</button>
+      <button type="submit" className={styles.submitButton} disabled={loading}>
+        {loading ? 'Enviando...' : 'Enviar'}
+      </button>
     </form>
   );
 }

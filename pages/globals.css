@@ -49,3 +49,18 @@ a {
 #root, .heroContainer {
   height: 100%;
 }
+
+
+/* globals.css */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Definindo o estilo global do body no arquivo global */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #000;
+  color: #fff;
+}

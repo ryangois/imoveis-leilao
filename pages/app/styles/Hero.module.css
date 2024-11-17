@@ -1,56 +1,60 @@
-/* Hero Section */
-.hero {
-  display: flex;
-  flex-direction: row;  /* Alinha os itens na horizontal */
-  justify-content: space-between;
-  align-items: center;
-  background: linear-gradient(170deg, hsl(0, 0%, 22%) 0%, hsl(0, 0%, 6%) 30%),
-              url('/path/to/your/image.jpg') no-repeat center center;  /* Adiciona o gradiente e a imagem de fundo */
-  color: #fff;
-  padding: 60px 20px;
-  border-radius: 20px;
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-  margin: -25px;
-  text-align: left;  /* Alinha o texto à esquerda */
-  background-size: cover; /* Faz a imagem de fundo ocupar toda a área */
-}
-
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: -20px;
-  text-align: left;
+  padding: 20px 40px;
+  position: fixed;
+  top: 0;
+  /* Fixar no topo */
+  left: 0;
+  width: 100%;
+  background: linear-gradient(170deg, hsl(0, 0%, 0%) 0%, hsl(0, 0%, 6%) 30%);
+  color: #fff;
+  z-index: 100;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  max-width: 100%;
+  /* Garante que o header não ultrapasse a largura da tela */
+  box-sizing: border-box;
+  /* Impede que o padding afete o layout */
+}
+
+
+.nav {
+  display: flex;
+  gap: 20px;
 }
 
 .nav a {
-  margin: 0 10px;
+  color: #ffffff;
   text-decoration: none;
-  color: #007bff;
+  font-size: 18px;
+  transition: color 0.3s ease;
 }
 
-.header h1 {
-  font-size: 22px;
-  font-weight: bold;
-  color: #f3f3f3;
+.nav a:hover {
+  color: #FF6F61;
+  /* Highlight color on hover */
+}
+
+.hero {
+  margin-top: 100px;
+  /* Ajusta o espaçamento para não sobrepor o header fixo */
   display: flex;
+  justify-content: space-between;
   align-items: center;
+  background: linear-gradient(170deg, hsl(0, 1%, 14%) 0%, hsl(0, 0%, 6%) 30%),
+    url('/path/to/your/image.jpg') no-repeat center center;
+  color: #fff;
+  padding: 60px 20px;
+  border-radius: 20px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  text-align: left;
+  background-size: cover;
+  position: relative;
 }
 
-.header h1::before {
-  content: '';
-  background-image: url(../../../public/home-icon-silhouette-svgrepo-com.svg);
-  background-repeat: no-repeat;
-  background-size: contain;
-  width: 30px;
-  height: 30px;
-  margin-right: 10px;
-}
-
-
-/* Ajustes adicionais para garantir o conteúdo da Hero section */
 .heroText {
-  max-width: 50%;  /* Limita o tamanho do texto */
+  max-width: 50%;
 }
 
 .heroText h1 {
@@ -81,7 +85,7 @@
 }
 
 .statNumber span {
-  color: #FF6F61; /* Highlight color for the numbers */
+  color: #FF6F61;
 }
 
 .statText {
@@ -105,25 +109,73 @@
 }
 
 .heroImage {
-  max-width: 45%;  /* Ajuste da imagem para não ocupar muito espaço */
-  position: relative;
+  max-width: 45%;
 }
 
 .heroImage img {
   border-radius: 15px;
-  width: 100%; /* Garante que a imagem ocupe toda a largura disponível */
+  width: 100%;
 }
 
-/*========================= RESPONSIVE STYLES =========================*/
+/* Sections for About and Contact */
+.sobre,
+.contato {
+  margin-top: 80px;
+  padding: 30px;
+  background-color: #f8f8f8;
+  border-radius: 8px;
+  box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
 
-/* For small devices */
+.sobre h2,
+.contato h2 {
+  font-size: 36px;
+  font-weight: bold;
+  color: #333;
+}
+
+
+.sobre p,
+.contato p {
+  font-size: 18px;
+  color: #555;
+}
+
+.sobre button,
+.contato button {
+  background-color: #FF6F61;
+  color: white;
+  padding: 10px 20px;
+  font-size: 18px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 20px;
+  transition: background-color 0.3s;
+}
+
+.sobre button:hover,
+.contato button:hover {
+  background-color: #d85947;
+}
+
+
+/* Responsive Styles */
 @media screen and (max-width: 768px) {
+
+  .hero img {
+    display: none;
+  }
+
   .hero {
-    flex-direction: column;  /* Muda para coluna em telas menores */
+    flex-direction: column;
     text-align: center;
     padding: 40px 20px;
-    margin: 0;
-    margin-top: -10px;
+  }
+
+  .nav {
+    display: none;
   }
 
   .heroText {
@@ -151,27 +203,33 @@
   .statItem {
     margin-bottom: 15px;
   }
+
+  .nav {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+  }
+
+  .exploreButton {
+    padding: 12px 25px;
+    /* Botão de explorar mais adequado para móveis */
+    font-size: 16px;
+  }
+
+  .sobre,
+  .contato {
+    padding: 20px;
+  }
 }
 
-/* For large devices */
-@media screen and (min-width: 1020px) {
-  .hero {
-    padding: 60px 50px;
-  }
+@media screen and (max-width: 768px) {
+.nav a{
+  display: none;
+}
 
-  .heroText h1 {
-    font-size: 60px;
-  }
-
-  .heroText p {
-    font-size: 20px;
-  }
-
-  .stats {
-    gap: 50px;
-  }
-
-  .heroImage {
-    max-width: 600px;
-  }
+.header h1{
+  text-align: center;
+  margin: auto;
+}
 }
