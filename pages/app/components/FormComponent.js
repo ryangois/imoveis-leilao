@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import Select from 'react-select';
 import styles from '../styles/Form.module.css';
@@ -11,110 +11,193 @@ export default function FormComponent({ formData, setFormData }) {
     selectedNeighborhoods = {},
     states = [],
     cities = {},
-    neighborhoods = {}
+    districts = {},
+    neighborhoods = {},
   } = formData || {}; // Default formData to empty if undefined
 
+  // Fetch states once on component mount
   useEffect(() => {
-    // Load all states
-    axios.get('https://servicodados.ibge.gov.br/api/v1/localidades/estados')
-      .then(response => setFormData(prevData => ({
-        ...prevData,
-        states: response.data
-          .map(state => ({ value: state.id, label: state.nome }))
-          .sort((a, b) => a.label.localeCompare(b.label)) // Sort states alphabetically
-      })))
-      .catch(error => console.error("Error loading states:", error));
+    axios
+      .get('https://servicodados.ibge.gov.br/api/v1/localidades/estados')
+      .then((response) =>
+        setFormData((prevData) => ({
+          ...prevData,
+          states: response.data
+            .map((state) => ({ value: state.id, label: state.nome }))
+            .sort((a, b) => a.label.localeCompare(b.label)), // Sort states alphabetically
+        }))
+      )
+      .catch((error) => console.error('Error loading states:', error));
   }, [setFormData]);
 
-  const handleStateChange = (selectedOptions) => {
-    const selectedIds = selectedOptions ? selectedOptions.map(option => option.value) : [];
-    setFormData(prevData => ({ ...prevData, selectedStates: selectedOptions || [] }));
+  const handleStateChange = useCallback(
+    (selectedOptions) => {
+      const selectedIds = selectedOptions ? selectedOptions.map((option) => option.value) : [];
+      const removedStateIds = selectedStates
+        .filter((state) => !selectedIds.includes(state.value))
+        .map((state) => state.value);
 
-    selectedIds.forEach(stateId => {
-      if (!cities[stateId]) {
-        // Load cities for each selected state
-        axios.get(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${stateId}/municipios`)
-          .then(response => setFormData(prevData => ({
-            ...prevData,
-            cities: {
-              ...prevData.cities,
-              [stateId]: response.data
-                .map(city => ({ value: city.id, label: city.nome }))
-                .sort((a, b) => a.label.localeCompare(b.label)) // Sort cities alphabetically
-            }
-          })))
-          .catch(error => console.error(`Error loading cities for state ${stateId}:`, error));
-      }
-    });
-  };
+      setFormData((prevData) => {
+        const updatedCities = { ...prevData.cities };
+        const updatedDistricts = { ...prevData.districts };
+        const updatedNeighborhoods = { ...prevData.neighborhoods };
 
-  const handleCityChange = (stateId, selectedOptions) => {
-    setFormData(prevData => ({
-      ...prevData,
-      selectedCities: {
-        ...prevData.selectedCities,
-        [stateId]: selectedOptions || []
-      },
-      districts: prevData.districts || {}, // Initialize districts if undefined
-    }));
-
-    selectedOptions.forEach(city => {
-      if (!(formData.districts && formData.districts[city.value])) {
-        // Load districts for each selected city
-        axios.get(`https://servicodados.ibge.gov.br/api/v1/localidades/municipios/${city.value}/distritos`)
-          .then(response => {
-            const districts = response.data.map(district => ({ value: district.id, label: district.nome }));
-            setFormData(prevData => ({
-              ...prevData,
-              districts: {
-                ...prevData.districts,
-                [city.value]: districts.length > 0 ? districts : [] // Only set districts if there are any
+        // Limpar cidades, distritos e bairros para estados desmarcados
+        removedStateIds.forEach((stateId) => {
+          if (updatedCities[stateId]) {
+            updatedCities[stateId].forEach((city) => {
+              // Remover distritos da cidade
+              if (updatedDistricts[city.value]) {
+                updatedDistricts[city.value].forEach((district) => {
+                  delete updatedNeighborhoods[district.value]; // Remover bairros do distrito
+                });
+                delete updatedDistricts[city.value]; // Remover distritos
               }
-            }));
-          })
-          .catch(error => console.error(`Error loading districts for city ${city.value}:`, error));
-      }
-    });
-  };
+            });
+            delete updatedCities[stateId]; // Remover cidades
+          }
+        });
 
-  const handleDistrictChange = (cityId, selectedOptions) => {
-    setFormData(prevData => ({
-      ...prevData,
-      selectedDistricts: {
-        ...prevData.selectedDistricts,
-        [cityId]: selectedOptions || []
-      }
-    }));
+        return {
+          ...prevData,
+          selectedStates: selectedOptions || [],
+          cities: updatedCities,
+          districts: updatedDistricts,
+          neighborhoods: updatedNeighborhoods,
+        };
+      });
 
-    selectedOptions.forEach(district => {
-      if (!neighborhoods[district.value]) {
-        // Load neighborhoods for each selected district
-        axios.get(`https://servicodados.ibge.gov.br/api/v1/localidades/distritos/${district.value}/subdistritos`)
-          .then(response => {
-            setFormData(prevData => ({
-              ...prevData,
-              neighborhoods: {
-                ...prevData.neighborhoods,
-                [district.value]: response.data
-                  .map(neighborhood => ({ value: neighborhood.id, label: neighborhood.nome }))
-                  .sort((a, b) => a.label.localeCompare(b.label)) // Sort neighborhoods alphabetically
-              }
-            }));
-          })
-          .catch(error => console.error(`Error loading neighborhoods for district ${district.value}:`, error));
-      }
-    });
-  };
 
-  const handleNeighborhoodChange = (districtId, selectedOptions) => {
-    setFormData(prevData => ({
-      ...prevData,
-      selectedNeighborhoods: {
-        ...prevData.selectedNeighborhoods,
-        [districtId]: selectedOptions || []
-      }
-    }));
-  };
+      // Carregar cidades para estados recém-selecionados
+      selectedIds.forEach((stateId) => {
+        if (!cities[stateId]) {
+          axios
+            .get(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${stateId}/municipios`)
+            .then((response) =>
+              setFormData((prevData) => ({
+                ...prevData,
+                cities: {
+                  ...prevData.cities,
+                  [stateId]: response.data
+                    .map((city) => ({ value: city.id, label: city.nome }))
+                    .sort((a, b) => a.label.localeCompare(b.label)),
+                },
+              }))
+            )
+            .catch((error) => console.error(`Error loading cities for state ${stateId}:`, error));
+        }
+      });
+    },
+    [selectedStates, cities, setFormData]
+  );
+
+  const handleCityChange = useCallback(
+    (stateId, selectedOptions) => {
+      const selectedCityIds = selectedOptions ? selectedOptions.map((option) => option.value) : [];
+      const removedCityIds = (selectedCities[stateId] || [])
+        .filter((city) => !selectedCityIds.includes(city.value))
+        .map((city) => city.value);
+
+      setFormData((prevData) => {
+        const updatedDistricts = { ...prevData.districts };
+        const updatedNeighborhoods = { ...prevData.neighborhoods };
+
+        removedCityIds.forEach((cityId) => {
+          delete updatedDistricts[cityId];
+          delete updatedNeighborhoods[cityId];
+        });
+
+        return {
+          ...prevData,
+          selectedCities: {
+            ...prevData.selectedCities,
+            [stateId]: selectedOptions || [],
+          },
+          districts: updatedDistricts,
+          neighborhoods: updatedNeighborhoods,
+        };
+      });
+
+      // Load districts for newly selected cities
+      selectedOptions.forEach((city) => {
+        if (!districts[city.value]) {
+          axios
+            .get(`https://servicodados.ibge.gov.br/api/v1/localidades/municipios/${city.value}/distritos`)
+            .then((response) =>
+              setFormData((prevData) => ({
+                ...prevData,
+                districts: {
+                  ...prevData.districts,
+                  [city.value]: response.data
+                    .map((district) => ({ value: district.id, label: district.nome }))
+                    .sort((a, b) => a.label.localeCompare(b.label)),
+                },
+              }))
+            )
+            .catch((error) => console.error(`Error loading districts for city ${city.value}:`, error));
+        }
+      });
+    },
+    [selectedCities, districts, setFormData]
+  );
+
+  const handleDistrictChange = useCallback(
+    (cityId, selectedOptions) => {
+      const selectedDistrictIds = selectedOptions ? selectedOptions.map((option) => option.value) : [];
+      const removedDistrictIds = (selectedDistricts[cityId] || [])
+        .filter((district) => !selectedDistrictIds.includes(district.value))
+        .map((district) => district.value);
+
+      setFormData((prevData) => {
+        const updatedNeighborhoods = { ...prevData.neighborhoods };
+        removedDistrictIds.forEach((districtId) => delete updatedNeighborhoods[districtId]);
+
+        return {
+          ...prevData,
+          selectedDistricts: {
+            ...prevData.selectedDistricts,
+            [cityId]: selectedOptions || [],
+          },
+          neighborhoods: updatedNeighborhoods,
+        };
+      });
+
+      // Load neighborhoods for newly selected districts
+      selectedOptions.forEach((district) => {
+        if (!neighborhoods[district.value]) {
+          axios
+            .get(`https://servicodados.ibge.gov.br/api/v1/localidades/distritos/${district.value}/subdistritos`)
+            .then((response) =>
+              setFormData((prevData) => ({
+                ...prevData,
+                neighborhoods: {
+                  ...prevData.neighborhoods,
+                  [district.value]: response.data
+                    .map((neighborhood) => ({ value: neighborhood.id, label: neighborhood.nome }))
+                    .sort((a, b) => a.label.localeCompare(b.label)),
+                },
+              }))
+            )
+            .catch((error) => console.error(`Error loading neighborhoods for district ${district.value}:`, error));
+        }
+      });
+    },
+    [selectedDistricts, neighborhoods, setFormData]
+  );
+
+  const handleNeighborhoodChange = useCallback(
+    (districtId, selectedOptions) => {
+      setFormData((prevData) => ({
+        ...prevData,
+        selectedNeighborhoods: {
+          ...prevData.selectedNeighborhoods,
+          [districtId]: selectedOptions || [],
+        },
+      }));
+    },
+    [setFormData]
+  );
+
 
   // Handle moving to the next input field on "Enter" press
   const handleKeyDown = (e, nextElement) => {
@@ -153,21 +236,22 @@ export default function FormComponent({ formData, setFormData }) {
       ))}
 
       {/* Multi-select dropdown for selecting districts for each selected city */}
-      {Object.keys(selectedCities || {}).map(stateId => (
-        (selectedCities[stateId] || []).map(city => (
-          <div key={city.value} className={styles.formGroup}>
-            <label>Selecione os Distritos de {city.label}:</label>
-            {formData.districts?.[city.value]?.length > 0 ? (
+      {Object.keys(selectedCities || {}).map((stateId) =>
+        (selectedCities[stateId] || []).map((city) =>
+          formData.districts?.[city.value] && formData.districts[city.value].length > 0 ? (
+            <div key={city.value} className={styles.formGroup}>
+              <label>Selecione os Distritos de {city.label}:</label>
               <Select
                 isMulti
                 options={formData.districts[city.value] || []}
                 value={selectedDistricts?.[city.value] || []}
                 onChange={(selectedOptions) => handleDistrictChange(city.value, selectedOptions)}
               />
-            ) : null}
-          </div>
-        ))
-      ))}
+            </div>
+          ) : null // Não exibe distritos se não houver cidades
+        )
+      )}
+
 
       {/* Multi-select dropdown for selecting neighborhoods for each selected district */}
       {Object.keys(selectedDistricts || {}).map(cityId => (

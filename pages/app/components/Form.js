@@ -78,7 +78,7 @@ export default function Form() {
       <div className={styles.formGroup}>
         <label>Qual é o objetivo da sua arrematação?</label>
         <select
-          onChange={(e) => handleInputChange('goal', e.target.value)}
+          onChange={(e) => handleInputChange("goal", e.target.value)}
           value={formData.goal}
         >
           <option value="">Selecione</option>
@@ -86,7 +86,17 @@ export default function Form() {
           <option value="locacao">Para locação</option>
           <option value="compra_e_venda">Para compra e venda</option>
           <option value="construcao">Construção</option>
+          <option value="outros">Outro</option>
         </select>
+        {formData.goal === "outros" && (
+          <input
+            type="text"
+            placeholder="Descreva o objetivo"
+            value={formData.otherGoal || ""}
+            onChange={(e) => handleInputChange("otherGoal", e.target.value)}
+          />
+        )}
+
       </div>
 
       {/* Estado Importante */}
@@ -150,9 +160,10 @@ export default function Form() {
 
       {/* Garagem, Quartos e Banheiros */}
       <div className={styles.formGroup}>
+        {/* Vagas de garagem */}
         <label>Vagas de garagem:</label>
         <select
-          onChange={(e) => handleInputChange('garageSpaces', e.target.value)}
+          onChange={(e) => handleInputChange("garageSpaces", e.target.value)}
           value={formData.garageSpaces}
         >
           <option value="">Selecione</option>
@@ -160,11 +171,21 @@ export default function Form() {
           <option value="2+">2+</option>
           <option value="3+">3+</option>
           <option value="4+">4+</option>
+          <option value="outros">Outros</option>
         </select>
+        {formData.garageSpaces === "outros" && (
+          <input
+            type="text"
+            placeholder="Descreva o número de vagas"
+            value={formData.otherGarageSpaces || ""}
+            onChange={(e) => handleInputChange("otherGarageSpaces", e.target.value)}
+          />
+        )}
 
+        {/* Quartos */}
         <label>Quartos:</label>
         <select
-          onChange={(e) => handleInputChange('rooms', e.target.value)}
+          onChange={(e) => handleInputChange("rooms", e.target.value)}
           value={formData.rooms}
         >
           <option value="">Selecione</option>
@@ -172,11 +193,21 @@ export default function Form() {
           <option value="2+">2+</option>
           <option value="3+">3+</option>
           <option value="4+">4+</option>
+          <option value="outros">Outros</option>
         </select>
+        {formData.rooms === "outros" && (
+          <input
+            type="text"
+            placeholder="Descreva o número de quartos"
+            value={formData.otherRooms || ""}
+            onChange={(e) => handleInputChange("otherRooms", e.target.value)}
+          />
+        )}
 
+        {/* Banheiros */}
         <label>Banheiros:</label>
         <select
-          onChange={(e) => handleInputChange('bathrooms', e.target.value)}
+          onChange={(e) => handleInputChange("bathrooms", e.target.value)}
           value={formData.bathrooms}
         >
           <option value="">Selecione</option>
@@ -184,8 +215,18 @@ export default function Form() {
           <option value="2+">2+</option>
           <option value="3+">3+</option>
           <option value="4+">4+</option>
+          <option value="outros">Outros</option>
         </select>
+        {formData.bathrooms === "outros" && (
+          <input
+            type="text"
+            placeholder="Descreva o número de banheiros"
+            value={formData.otherBathrooms || ""}
+            onChange={(e) => handleInputChange("otherBathrooms", e.target.value)}
+          />
+        )}
       </div>
+
 
       {/* Infraestrutura */}
       <div className={styles.formGroup}>
@@ -201,6 +242,7 @@ export default function Form() {
             'Sauna',
             'Elevador',
             'Portaria 24h',
+            'Outros',
           ].map((item) => (
             <label key={item}>
               <input
@@ -217,28 +259,104 @@ export default function Form() {
               {item}
             </label>
           ))}
+          {/* Input for "Outros" */}
+          {formData.infrastructure.includes('Outros') && (
+            <input
+              type="text"
+              placeholder="Descreva outras infraestruturas indispensáveis"
+              value={formData.otherInfrastructure || ''}
+              onChange={(e) => handleInputChange('otherInfrastructure', e.target.value)}
+            />
+          )}
         </div>
-        <input
-          type="text"
-          placeholder="O que mais é indispensável para você?"
-          value={formData.otherInfrastructure}
-          onChange={(e) => handleInputChange('otherInfrastructure', e.target.value)}
-        />
       </div>
 
       {/* Pagamento */}
       <div className={styles.formGroup}>
         <label>Preferência por pagamento:</label>
         <select
-          onChange={(e) => handleInputChange('paymentPreference', e.target.value)}
+          onChange={(e) => handleInputChange("paymentPreference", e.target.value)}
           value={formData.paymentPreference}
         >
           <option value="">Selecione</option>
           <option value="vista">À vista</option>
           <option value="parcelado">Parcelado</option>
           <option value="financiado">Financiado</option>
-          <option value="fgts">Utiliza FGTS</option>
+          <option value="fgts">Utilizar FGTS</option>
+          <option value="outros">Outra Forma</option>
         </select>
+        {formData.paymentPreference === "outros" && (
+          <input
+            type="text"
+            placeholder="Descreva outra forma de pagamento"
+            value={formData.otherPaymentPreference || ""}
+            onChange={(e) => handleInputChange("otherPaymentPreference", e.target.value)}
+          />
+        )}
+
+        {formData.paymentPreference === "fgts" && (
+          <input
+            type="number"
+            placeholder="Valor disponível em FGTS"
+            value={formData.fgtsValue}
+            onChange={(e) => handleInputChange('fgtsValue', e.target.value)}
+          />
+        )}
+
+        {formData.paymentPreference === "financiado" && (
+          <>
+            <label>Já possui crédito aprovado?</label>
+            <select onChange={(e) => handleInputChange('creditApproved', e.target.value)} value={formData.creditApproved}>
+              <option value="">Selecione</option>
+              <option value="sim">Sim</option>
+              <option value="nao">Não</option>
+            </select>
+
+            {formData.creditApproved === "sim" && (
+              <div>
+                <label>Em qual(is) instituição(ões):</label>
+                {["Caixa Econômica Federal", "Banco do Brasil", "Bradesco", "Itaú", "Santander", "C6", "Nubank", "Outra instituição"].map(inst => (
+                  <div key={inst}>
+                    <label>
+                      <input
+                        type="checkbox"
+                        value={inst}
+                        checked={formData.approvedInstitutions.includes(inst)}
+                        onChange={(e) => {
+                          const selected = e.target.checked
+                            ? [...formData.approvedInstitutions, inst]
+                            : formData.approvedInstitutions.filter(i => i !== inst);
+                          handleInputChange('approvedInstitutions', selected);
+                        }}
+                      />
+                      {inst}
+                    </label>
+                    {formData.approvedInstitutions.includes(inst) && (
+                      <input
+                        type="number"
+                        placeholder={`Crédito aprovado - ${inst}`}
+                        value={formData.institutionCreditValues[inst] || ''}
+                        onChange={(e) => {
+                          const values = { ...formData.institutionCreditValues, [inst]: e.target.value };
+                          handleInputChange('institutionCreditValues', values);
+                        }}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+      <div className={styles.formGroup}>
+        <label>De quanto você dispõe para aportes mensais (eventualidades e custos fixos)?</label>
+        <input
+          type="number"
+          placeholder="Valor que dispõe"
+          value={formData.monthlyContribution}
+          onChange={(e) => handleInputChange('monthlyContribution', e.target.value)}
+        />
       </div>
 
       {/* Mais Campos */}
@@ -252,6 +370,17 @@ export default function Form() {
           <option value="fase1">Fase 1</option>
           <option value="fase1_e_2">Fases 1 e 2</option>
         </select>
+        <p>Obs: Fase 1 vai desde a análise do imóvel até a desocupação e registro em seu nome. A fase 2 vai desde a reforma até a venda do imóvel.</p>
+      </div>
+
+      <div className={styles.formGroup}>
+        <label>Existe mais alguma informação ou observação que gostaria de adicionar?</label>
+        <textarea
+          placeholder="Escreva suas observações aqui"
+          value={formData.additionalInfo}
+          onChange={(e) => handleInputChange('additionalInfo', e.target.value)}
+          rows="4"
+        />
       </div>
 
       {/* E-mail */}
