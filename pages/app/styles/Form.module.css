@@ -48,6 +48,7 @@
 
 .formGroup input[type="text"],
 .formGroup input[type="number"],
+.formGroup input[type="email"],
 .formGroup select,
 .formGroup textarea {
   width: 90%;
