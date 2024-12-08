@@ -1,12 +1,9 @@
 import nodemailer from 'nodemailer';
-// process.env.EMAIL_USER
-// process.env.EMAIL_PASS
+import PDFDocument from 'pdfkit';
+import fs from 'fs';
+import path from 'path';
 
-// Função para filtrar os dados, se necessário
-function processForm(formData) {
-    return formData; // Retorna os dados sem alteração, mas pode ser customizado
-}
-
+// Função para formatar os dados do formulário com bullets
 function formatFormDataWithBullets(formData) {
     const fieldLabels = {
         nome: 'Nome',
@@ -27,21 +24,20 @@ function formatFormDataWithBullets(formData) {
 
             // Se for um array de objetos (estados, cidades, bairros)
             if (Array.isArray(value)) {
-                // Verifica se é um array de objetos que contém 'label' (como estados, cidades, bairros)
                 formattedValue = value
                     .map((item) => {
                         if (typeof item === 'object' && item.label) {
-                            return item.label;  // Exibe o valor da chave 'label'
+                            return item.label;
                         }
-                        return item;  // Se não for objeto ou não tiver 'label', exibe o valor diretamente
+                        return item;
                     })
-                    .join(', ');  // Junta os valores com vírgula
+                    .join(', ');
             }
             // Se for um objeto, exibe suas chaves e valores
             else if (typeof value === "object") {
                 formattedValue = Object.entries(value)
                     .map(([subKey, subValue]) => `${subKey}: ${subValue}`)
-                    .join(', ');  // Mostra as chaves e valores do objeto
+                    .join(', ');
             }
             // Caso contrário, exibe o valor diretamente
             else {
@@ -50,14 +46,36 @@ function formatFormDataWithBullets(formData) {
 
             return `• ${fieldLabels[key] || key}: ${formattedValue}`;
         })
-        .join('\n\n');  // Adiciona espaçamento entre os itens
+        .join('\n\n');
 }
 
+// Função para criar o PDF
+function createPdf(formData, protocolo) {
+    const doc = new PDFDocument();
+    const filePath = path.join(__dirname, `${protocolo}.pdf`);
 
+    // Salva o PDF em um arquivo
+    doc.pipe(fs.createWriteStream(filePath));
 
+    // Adiciona título e protocolo
+    doc.fontSize(16).text('Formulário de Intenção de Compra de Imóvel', { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(12).text(`Protocolo: ${protocolo}`);
+    doc.moveDown();
 
+    // Adiciona dados do formulário
+    doc.text('Dados do Formulário:', { underline: true });
+    doc.moveDown();
 
+    // Formata e escreve os dados no PDF
+    const formattedFormData = formatFormDataWithBullets(formData);
+    doc.fontSize(10).text(formattedFormData, { align: 'left', lineGap: 6 });
 
+    // Finaliza o PDF
+    doc.end();
+
+    return filePath;
+}
 
 export default async function handler(req, res) {
     if (req.method === 'POST') {
@@ -66,43 +84,46 @@ export default async function handler(req, res) {
 
         console.log("Dados recebidos no formulário:", formData);
 
-
-        // Filtra os dados antes de enviar o e-mail
-        const filteredFormData = processForm(formData);
-
-        // Formata os dados com bullets
-        const formattedFormData = formatFormDataWithBullets(filteredFormData);
-
         try {
             const transporter = nodemailer.createTransport({
                 service: 'gmail',
                 auth: {
-                    user: "ryangoisdev@gmail.com",
-                    pass: "",
+                    user: process.env.EMAIL_USER,
+                    pass: process.env.EMAIL_PASS,
                 },
             });
+
+            // Cria o PDF com os dados do formulário
+            const pdfPath = createPdf(formData, protocolo);
+            console.log('PDF gerado em:', pdfPath);
 
             const adminMessage = `
             Novo formulário de intenção de compra de imóvel.
             Protocolo: ${protocolo}
             
             Dados:
-            ${formattedFormData}
+            ${formatFormDataWithBullets(formData)}
             `;
 
-            // Envia e-mail para o administrador
+            // Envia e-mail para o administrador com o PDF em anexo
             await transporter.sendMail({
                 from: process.env.EMAIL_USER,
-                to: 'ryangoisdev@gmail.com',
+                to: process.env.EMAIL_USER,
                 subject: `Novo formulário de intenção - Protocolo: ${protocolo}`,
                 text: adminMessage,
+                attachments: [
+                    {
+                        filename: `${protocolo}.pdf`,
+                        path: pdfPath,
+                    },
+                ],
             });
 
             // Envia confirmação ao usuário, se o e-mail estiver disponível
-            if (filteredFormData.email) {
+            if (formData.email) {
                 await transporter.sendMail({
                     from: process.env.EMAIL_USER,
-                    to: filteredFormData.email,
+                    to: formData.email,
                     subject: `Confirmação de recebimento - Protocolo: ${protocolo}`,
                     text: `Recebemos seu formulário. Seu protocolo é: ${protocolo}`,
                 });
