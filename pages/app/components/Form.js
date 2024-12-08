@@ -1,9 +1,129 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import dynamic from 'next/dynamic';
 import styles from '../styles/Form.module.css';
 
 // Dynamically import the FormComponent to disable SSR for this component
+function processForm(formData) {
+  const userFormData = {
+    protocol: formData.protocol,
+    goal: formData.goal,
+    stateImportant: formData.stateImportant,
+    selectedStates: formData.selectedStates,
+    selectedCities: formData.selectedCities,
+    selectedDistricts: formData.selectedDistricts,
+    selectedNeighborhoods: formData.selectedNeighborhoods,
+    propertyType: formData.propertyType,
+    minArea: formData.minArea,
+    maxArea: formData.maxArea,
+    garageSpaces: formData.garageSpaces,
+    rooms: formData.rooms,
+    bathrooms: formData.bathrooms,
+    infrastructure: formData.infrastructure,
+    otherInfrastructure: formData.otherInfrastructure,
+    paymentPreference: formData.paymentPreference,
+    fgtsValue: formData.fgtsValue,
+    creditApproved: formData.creditApproved,
+    approvedInstitutions: formData.approvedInstitutions,
+    institutionCreditValues: formData.institutionCreditValues,
+    availableFunds: formData.availableFunds,
+    monthlyContribution: formData.monthlyContribution,
+    advisoryPhase: formData.advisoryPhase,
+    additionalInfo: formData.additionalInfo,
+    email: formData.email
+  };
+
+  const filteredData = Object.fromEntries(
+    Object.entries(userFormData).filter(([key, value]) => value !== undefined && value !== "")
+  );
+  
+  console.log(filteredData);
+
+  return filteredData;
+}
+
+function formatFormDataWithBullets(formData) {
+  const fieldLabels = {
+    protocol: "Protocolo",
+    goal: "Objetivo",
+    stateImportant: "Estado importante",
+    selectedStates: "• Estados selecionados",
+    selectedCities: "• Cidades selecionadas",
+    selectedNeighborhoods: "• Bairros selecionados",
+    selectedDistricts: "• Distritos selecionados",
+    propertyType: "• Tipo de imóvel",
+    minArea: "• Área mínima (m²)",
+    maxArea: "• Área máxima (m²)",
+    garageSpaces: "• Vagas de garagem",
+    rooms: "• Quartos",
+    bathrooms: "• Banheiros",
+    infrastructure: "• Infraestrutura",
+    otherInfrastructure: "Outras Infraestruturas",
+    paymentPreference: "• Preferência de pagamento",
+    creditApproved: "• Crédito aprovado",
+    approvedInstitutions: "• Instituições aprovadas",
+    otherPaymentPreference: "• Outra preferencia de pagamento",
+    institutionCreditValues: "• Valores de crédito das instituições",
+    monthlyContribution: "• Contribuição mensal",
+    advisoryPhase: "• Fase de consultoria",
+    additionalInfo: "• Informações adicionais",
+    email: "• E-mail"
+  };
+  
+
+  return Object.entries(formData)
+    .map(([key, value]) => {
+      const label = fieldLabels[key] || key;  // Obtém o nome do campo
+
+      if (key === 'institutionCreditValues' && typeof value === 'object') {
+        return Object.entries(value)
+          .map(([institution, creditValue]) => {
+            return `${institution}: R$ ${creditValue}`;
+          })
+          .join('\n');
+      }
+
+      // Caso o valor seja um array (como selectedStates, selectedCities, selectedNeighborhoods, selectedDistricts)
+      if (Array.isArray(value)) {
+        if (value.length > 0) {
+          // Se o array contém objetos, mapeia e exibe o 'label' de cada objeto
+          return `${label}:\n- ${value.map(item => item?.label || item).join('\n- ')}`;
+        } else {
+          return null; // Se o array estiver vazio, ignore
+        }
+      }
+
+      // Caso o valor seja um objeto com arrays dentro (como selectedCities, selectedNeighborhoods, selectedDistricts)
+      if (typeof value === 'object' && value !== null) {
+        return Object.entries(value)
+          .map(([subKey, subValue]) => {
+            // Verifica se o subValor é um array de objetos (como as cidades, bairros e distritos)
+            if (Array.isArray(subValue)) {
+              return `${label} (${subKey}):\n- ${subValue.map(item => item?.label || item).join('\n- ')}`;
+            }
+            return null;
+          })
+          .filter(Boolean)  // Remove valores nulos
+          .join('\n');  // Junta todos os resultados
+      }
+
+      // Agora vamos adicionar um if separado para os valores de 'institutionCreditValues'
+      if (key === 'institutionCreditValues' && typeof value === 'object') {
+        // Exibe os valores de crédito das instituições
+        return Object.entries(value)
+          .map(([institution, creditValue]) => {
+            return `${institution}: R$ ${creditValue}`;
+          })
+          .join('\n'); // Junta os valores de crédito das instituições com uma nova linha
+      }
+
+      // Caso contrário, o valor é simples (string, número, etc)
+      return value ? `${label}: ${value}` : null;
+    })
+    .filter(Boolean) // Remove valores nulos
+    .join('\n'); // Junta todos os campos com nova linha
+}
+
 const FormComponent = dynamic(() => import('./FormComponent'), { ssr: false });
 
 export default function Form() {
@@ -13,6 +133,7 @@ export default function Form() {
     selectedStates: [],
     selectedCities: {},
     selectedNeighborhoods: {},
+    selectedDistricts:{},
     propertyType: [],
     minArea: '',
     maxArea: '',
@@ -33,8 +154,9 @@ export default function Form() {
     email: '',
   });
 
-  const [loading, setLoading] = useState(false); // State to handle loading
-  const [message, setMessage] = useState(null); // State for status messages
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState(null);
+  const messageRef = useRef(null);
 
   const handleInputChange = (name, value) => {
     setFormData((prevData) => ({ ...prevData, [name]: value }));
@@ -45,8 +167,12 @@ export default function Form() {
     setLoading(true);
     setMessage(null);
 
+    const filteredData = processForm(formData); // Filter out empty or undefined fields
+    const formattedData = formatFormDataWithBullets(filteredData); // Format data with bullets
+
+
     try {
-      const response = await axios.post('/api/sendEmail', formData);
+      const response = await axios.post('/api/sendEmail', formattedData);
       setMessage({
         type: 'success',
         text: `Formulário submetido com sucesso! Protocolo: ${response.data.protocolo}`,
@@ -59,17 +185,28 @@ export default function Form() {
       });
     } finally {
       setLoading(false);
+
+      // Scroll to the message container and set focus on it
+      if (messageRef.current) {
+        messageRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        messageRef.current.focus();  // Set focus on the message element
+      }
     }
   };
+
 
   return (
     <form className={styles.formContainer} onSubmit={handleSubmit}>
       <h1 className={styles.formTitle}>Questionário de Intenção de Compra de Imóvel de Leilão</h1>
 
       {message && (
-        <div className={`${styles.message} ${styles[message.type]}`}>
-          {message.text}
-        </div>
+        <div
+        className={`${styles.message} ${styles[message.type]}`}
+        ref={messageRef} // Attach the ref to the message container
+        tabIndex="-1" // Ensure the message can receive focus
+      >
+        {message.text}
+      </div>
       )}
 
       {loading && <div className={styles.loading}>Enviando...</div>}
@@ -143,14 +280,14 @@ export default function Form() {
 
       {/* Metragem */}
       <div className={styles.formGroup}>
-        <label>Metragem mínima:</label>
+        <label>Metragem mínima (m²):</label>
         <input
           type="number"
           onChange={(e) => handleInputChange('minArea', e.target.value)}
           value={formData.minArea}
         />
 
-        <label>Metragem máxima:</label>
+        <label>Metragem máxima (m²):</label>
         <input
           type="number"
           onChange={(e) => handleInputChange('maxArea', e.target.value)}
@@ -394,8 +531,12 @@ export default function Form() {
         />
       </div>
 
-      <button type="submit" className={styles.submitButton} disabled={loading}>
-        {loading ? 'Enviando...' : 'Enviar'}
+      <button
+        type="submit"
+        className={styles.submitButton}
+        disabled={loading}  // Desabilita o botão enquanto está carregando
+      >
+        {loading ? 'Enviando...' : 'Enviar Formulário'}
       </button>
     </form>
   );
