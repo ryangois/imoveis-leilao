@@ -182,6 +182,16 @@ export default function Form() {
     return `R$ ${value.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`; // Formatação para adicionar pontos de milhar
   }
 
+  const handlePropertyTypeChange = (type) => {
+  if (type === 'Indiferente') {
+    handleInputChange('propertyType', type === 'Indiferente' ? ['Indiferente'] : []);
+  } else {
+    const newSelected = type.checked 
+      ? [...formData.propertyType, type] 
+      : formData.propertyType.filter((t) => t !== type);
+    handleInputChange('propertyType', newSelected);
+  }
+}
 
   const handleInputChange = (name, value) => {
     let formattedValue = value;
@@ -450,6 +460,7 @@ export default function Form() {
             'Elevador',
             'Portaria 24h',
             'Outros',
+            'Indiferente',
           ].map((item) => (
              <label key={type}>
               <input
