@@ -88,8 +88,8 @@ export default async function handler(req, res) {
             const transporter = nodemailer.createTransport({
                 service: 'gmail',
                 auth: {
-                    user: "davifrancoassessoria@gmail.com",
-                    pass: "kvoscqnffqlezpnb",
+                    user: "ryangoisdev@gmail.com",
+                    pass: "cohxnebuifwtgzvp",
                 },
             });
 
@@ -107,8 +107,8 @@ export default async function handler(req, res) {
 
             // Envia e-mail para o administrador com o PDF em anexo
             await transporter.sendMail({
-                from: "davifrancoassessoria@gmail.com",
-                to: "davifrancoassessoria@gmail.com",
+                from: "cohxnebuifwtgzvp",
+                to: "ryangoisdev@gmail.com",
                 subject: `Novo formulário de intenção - Protocolo: ${protocolo}`,
                 text: adminMessage,
                 attachments: [
@@ -122,7 +122,7 @@ export default async function handler(req, res) {
             // Envia confirmação ao usuário, se o e-mail estiver disponível
             if (formData.email) {
                 await transporter.sendMail({
-                    from: "davifrancoassessoria@gmail.com",
+                    from: "ryangoisdev@gmail.com",
                     to: formData.email,
                     subject: `Confirmação de recebimento - Protocolo: ${protocolo}`,
                     text: `Recebemos seu formulário. Seu protocolo é: ${protocolo}`,
