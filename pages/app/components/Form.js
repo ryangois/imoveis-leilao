@@ -451,19 +451,27 @@ export default function Form() {
             'Portaria 24h',
             'Outros',
           ].map((item) => (
-            <label key={item}>
+             <label key={type}>
               <input
                 type="checkbox"
-                value={item}
-                checked={formData.infrastructure.includes(item)}
+                value={type}
+                checked={formData.propertyType.includes(type)}
                 onChange={(e) => {
-                  const selected = e.target.checked
-                    ? [...formData.infrastructure, item]
-                    : formData.infrastructure.filter((i) => i !== item);
-                  handleInputChange('infrastructure', selected);
+                  if (type === 'Indiferente') {
+                    // Se "Indiferente" for marcado, desmarque os outros e marque "Indiferente"
+                    const newSelected = e.target.checked ? ['Indiferente'] : [];
+                    handleInputChange('propertyType', newSelected);
+                  } else {
+                    // Se "Indiferente" não estiver marcado, altere os outros tipos normalmente
+                    const newSelected = e.target.checked
+                      ? [...formData.propertyType, type]
+                      : formData.propertyType.filter((t) => t !== type);
+                    handleInputChange('propertyType', newSelected);
+                  }
                 }}
+                disabled={formData.propertyType.includes('Indiferente') && type !== 'Indiferente'}
               />
-              {item}
+              {type}
             </label>
           ))}
           {/* Input for "Outros" */}
