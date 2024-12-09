@@ -449,42 +449,29 @@ export default function Form() {
       <div className={styles.formGroup}>
         <label>Infraestrutura indispensável:</label>
         <div>
-          {[
-            'Academia',
-            'Churrasqueira',
-            'Piscina',
-            'Playground',
-            'Quadra poliesportiva',
-            'Salão de festas',
-            'Sauna',
-            'Elevador',
-            'Portaria 24h',
-            'Outros',
-            'Indiferente',
-          ].map((item) => (
-             <label key={type}>
-              <input
-                type="checkbox"
-                value={type}
-                checked={formData.propertyType.includes(type)}
-                onChange={(e) => {
-                  if (type === 'Indiferente') {
-                    // Se "Indiferente" for marcado, desmarque os outros e marque "Indiferente"
-                    const newSelected = e.target.checked ? ['Indiferente'] : [];
-                    handleInputChange('propertyType', newSelected);
-                  } else {
-                    // Se "Indiferente" não estiver marcado, altere os outros tipos normalmente
-                    const newSelected = e.target.checked
-                      ? [...formData.propertyType, type]
-                      : formData.propertyType.filter((t) => t !== type);
-                    handleInputChange('propertyType', newSelected);
-                  }
-                }}
-                disabled={formData.propertyType.includes('Indiferente') && type !== 'Indiferente'}
-              />
-              {type}
-            </label>
-          ))}
+          {['Casa', 'Apartamento', 'Terreno', 'Imóvel comercial', 'Prédio', 'Indiferente'].map((type) => (
+  <label key={type}>
+    <input 
+      type="checkbox" 
+      value={type} 
+      checked={formData.propertyType.includes(type)} 
+      onChange={(e) => {
+        const targetType = e.target.value;
+        if (targetType === 'Indiferente') {
+          const newSelected = e.target.checked ? ['Indiferente'] : [];
+          handleInputChange('propertyType', newSelected);
+        } else {
+          const newSelected = e.target.checked 
+            ? [...formData.propertyType, targetType] 
+            : formData.propertyType.filter((t) => t !== targetType);
+          handleInputChange('propertyType', newSelected);
+        }
+      }} 
+      disabled={formData.propertyType.includes('Indiferente') && type !== 'Indiferente'}
+    />
+    {type}
+  </label>
+))}
           {/* Input for "Outros" */}
           {formData.infrastructure.includes('Outros') && (
             <input
