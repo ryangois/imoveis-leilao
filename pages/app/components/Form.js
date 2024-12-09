@@ -186,27 +186,22 @@ export default function Form() {
   const handleInputChange = (name, value) => {
     let formattedValue = value;
 
-    // Se o campo for 'cpf', aplica a formatação do CPF
-    if (name === 'cpf') {
-      formattedValue = formatCPF(value);
-    }
-    // Se for um campo monetário, tenta garantir que o valor é numérico
-    else if (['fgtsValue', 'availableFunds', 'monthlyContribution', 'institutionCreditValues'].includes(name)) {
-      // Remove qualquer caractere não numérico (como vírgulas ou pontos)
-      formattedValue = value.replace(/\D/g, '');
-
-      // Se o valor for um número, formata como moeda
-      if (formattedValue && !isNaN(formattedValue)) {
-        formattedValue = formatCurrency(parseFloat(formattedValue));
-      } else {
-        formattedValue = ''; // Caso contrário, deixa o valor em branco
+    // Verifica se o valor é uma string
+    if (typeof value === 'string') {
+      // Se for um campo monetário, tenta garantir que o valor é numérico
+      if (['fgtsValue', 'availableFunds', 'monthlyContribution', 'institutionCreditValues'].includes(name)) {
+        // Remove qualquer caractere não numérico (como vírgulas ou pontos)
+        formattedValue = value.replace(/\D/g, '');
+        // Se o valor for um número, formata como moeda
+        if (formattedValue && !isNaN(formattedValue)) {
+          formattedValue = formatCurrency(parseFloat(formattedValue));
+        } else {
+          formattedValue = ''; // Caso contrário, deixa o valor em branco
+        }
       }
     }
 
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: formattedValue, // Atualiza o estado com o valor formatado
-    }));
+    setFormData((prevData) => ({ ...prevData, [name]: formattedValue }));
   };
 
 
@@ -489,7 +484,6 @@ export default function Form() {
         <select
           onChange={(e) => handleInputChange("paymentPreference", e.target.value)}
           value={formData.paymentPreference}
-          required
         >
           <option value="">Selecione</option>
           <option value="vista">À vista</option>
@@ -508,12 +502,18 @@ export default function Form() {
         )}
 
         {formData.paymentPreference === "fgts" && (
-          <input
-            type="number"
-            placeholder="Valor disponível em FGTS"
-            value={formData.fgtsValue}
-            onChange={(e) => handleInputChange('fgtsValue', e.target.value)}
-          />
+          <div className={styles.formGroup}>
+            <label>Valor disponível em FGTS</label>
+            <input
+              type="text" // Change to text to allow for formatting
+              placeholder="Valor disponível em FGTS"
+              value={formData.fgtsValue}
+              onChange={(e) => {
+                const value = e.target.value.replace(/[^0-9,\.]/g, ''); // Remove non-numeric characters
+                handleInputChange('fgtsValue', value.replace(',', '.')); // Replace commas with dots
+              }}
+            />
+          </div>
         )}
 
         {formData.paymentPreference === "financiado" && (
@@ -528,7 +528,7 @@ export default function Form() {
             {formData.creditApproved === "sim" && (
               <div>
                 <label>Em qual(is) instituição(ões):</label>
-                {["Caixa Econômica Federal", "Banco do Brasil", "Bradesco", "Itaú", "Santander", "C6", "Nubank", "Outra instituição"].map(inst => (
+                {["Caixa Econômica Federal", "Banco do Brasil", "Bradesco", "Itaú", "Santander", "C6", "Nubank", "Outra instituição"].map((inst) => (
                   <div key={inst}>
                     <label>
                       <input
@@ -538,22 +538,30 @@ export default function Form() {
                         onChange={(e) => {
                           const selected = e.target.checked
                             ? [...formData.approvedInstitutions, inst]
-                            : formData.approvedInstitutions.filter(i => i !== inst);
-                          handleInputChange('approvedInstitutions', selected);
+                            : formData.approvedInstitutions.filter((i) => i !== inst);
+                          handleInputChange("approvedInstitutions", selected);
                         }}
                       />
                       {inst}
                     </label>
                     {formData.approvedInstitutions.includes(inst) && (
-                      <input
-                        type="number"
-                        placeholder={`Crédito aprovado - ${inst}`}
-                        value={formData.institutionCreditValues[inst] || ''}
-                        onChange={(e) => {
-                          const values = { ...formData.institutionCreditValues, [inst]: e.target.value };
-                          handleInputChange('institutionCreditValues', values);
-                        }}
-                      />
+                      <div>
+                        <label>{`Crédito aprovado - ${inst}`}</label>
+                        <input
+                          type="text"
+                          placeholder={`Crédito aprovado - ${inst}`}
+                          value={formatCurrency(formData.institutionCreditValues[inst])}
+                          onChange={(e) => {
+                            const rawValue = e.target.value.replace(/[^0-9,\.]/g, "").replace(",", ".");
+                            const cleanedValue = rawValue.replace(/R\$/g, "").replace(/\./g, "").replace(",", ".");
+                            const updatedInstitutionCreditValues = {
+                              ...formData.institutionCreditValues,
+                              [inst]: cleanedValue,
+                            };
+                            handleInputChange("institutionCreditValues", updatedInstitutionCreditValues);
+                          }}
+                        />
+                      </div>
                     )}
                   </div>
                 ))}
@@ -561,6 +569,9 @@ export default function Form() {
             )}
           </>
         )}
+
+
+
       </div>
       <div className={styles.formGroup}>
         <label>De quanto você dispõe para aportes mensais (eventualidades e custos fixos)?</label>
