@@ -1,80 +1,20 @@
+import chromium from 'chrome-aws-lambda';
 import nodemailer from 'nodemailer';
-import PDFDocument from 'pdfkit';
-import fs from 'fs';
-import path from 'path';
 
-// Função para formatar os dados do formulário com bullets
-function formatFormDataWithBullets(formData) {
-    const fieldLabels = {
-        nome: 'Nome',
-        email: 'Email',
-        telefone: 'Telefone',
-        estadoImportante: 'Estado Importante',
-        objetivo: 'Objetivo',
-        tipoImovel: 'Tipo de Imóvel',
-        estadosSelecionados: 'Estados Selecionados',
-        cidadesSelecionadas: 'Cidades Selecionadas',
-        bairrosSelecionados: 'Bairros Selecionados',
-        // Adicione outros campos conforme necessário
-    };
+async function createHtmlPdf(htmlContent) {
+    const browser = await chromium.puppeteer.launch({
+        args: chromium.args,
+        executablePath: await chromium.executablePath,
+        headless: true,
+    });
 
-    return Object.entries(formData)
-        .map(([key, value]) => {
-            let formattedValue = "";
+    const page = await browser.newPage();
+    await page.setContent(htmlContent);
 
-            // Se for um array de objetos (estados, cidades, bairros)
-            if (Array.isArray(value)) {
-                formattedValue = value
-                    .map((item) => {
-                        if (typeof item === 'object' && item.label) {
-                            return item.label;
-                        }
-                        return item;
-                    })
-                    .join(', ');
-            }
-            // Se for um objeto, exibe suas chaves e valores
-            else if (typeof value === "object") {
-                formattedValue = Object.entries(value)
-                    .map(([subKey, subValue]) => `${subKey}: ${subValue}`)
-                    .join(', ');
-            }
-            // Caso contrário, exibe o valor diretamente
-            else {
-                formattedValue = value ?? "Não informado";
-            }
+    const pdfBuffer = await page.pdf({ format: 'A4' });
+    await browser.close();
 
-            return `• ${fieldLabels[key] || key}: ${formattedValue}`;
-        })
-        .join('\n\n');
-}
-
-// Função para criar o PDF
-function createPdf(formData, protocolo) {
-    const doc = new PDFDocument();
-    const filePath = path.join(__dirname, `${protocolo}.pdf`);
-
-    // Salva o PDF em um arquivo
-    doc.pipe(fs.createWriteStream(filePath));
-
-    // Adiciona título e protocolo
-    doc.fontSize(16).text('Formulário de Intenção de Compra de Imóvel', { align: 'center' });
-    doc.moveDown();
-    doc.fontSize(12).text(`Protocolo: ${protocolo}`);
-    doc.moveDown();
-
-    // Adiciona dados do formulário
-    doc.text('Dados do Formulário:', { underline: true });
-    doc.moveDown();
-
-    // Formata e escreve os dados no PDF
-    const formattedFormData = formatFormDataWithBullets(formData);
-    doc.fontSize(10).text(formattedFormData, { align: 'left', lineGap: 6 });
-
-    // Finaliza o PDF
-    doc.end();
-
-    return filePath;
+    return pdfBuffer;
 }
 
 export default async function handler(req, res) {
@@ -82,9 +22,21 @@ export default async function handler(req, res) {
         const formData = req.body;
         const protocolo = `PROT-${Math.floor(Math.random() * 1000000)}`;
 
-        console.log("Dados recebidos no formulário:", formData);
+        const htmlContent = `
+        <h1>Formulário de Intenção de Compra</h1>
+        <p><strong>Protocolo:</strong> ${protocolo}</p>
+        <ul>
+            ${Object.entries(formData)
+                .map(([key, value]) => `<li><strong>${key}:</strong> ${value}</li>`)
+                .join('')}
+        </ul>
+        `;
 
         try {
+            // Generate PDF from HTML
+            const pdfBuffer = await createHtmlPdf(htmlContent);
+
+            // Configure Nodemailer transport
             const transporter = nodemailer.createTransport({
                 service: 'gmail',
                 auth: {
@@ -93,10 +45,7 @@ export default async function handler(req, res) {
                 },
             });
 
-            // Cria o PDF com os dados do formulário
-            const pdfPath = createPdf(formData, protocolo);
-            console.log('PDF gerado em:', pdfPath);
-
+            // Email to administrator
             const adminMessage = `
             Novo formulário de intenção de compra de imóvel.
             Protocolo: ${protocolo}
@@ -105,7 +54,6 @@ export default async function handler(req, res) {
             ${formatFormDataWithBullets(formData)}
             `;
 
-            // Envia e-mail para o administrador com o PDF em anexo
             await transporter.sendMail({
                 from: process.env.EMAIL_USER,
                 to: process.env.EMAIL_USER,
@@ -114,12 +62,12 @@ export default async function handler(req, res) {
                 attachments: [
                     {
                         filename: `${protocolo}.pdf`,
-                        path: pdfPath,
+                        content: pdfBuffer,
                     },
                 ],
             });
 
-            // Envia confirmação ao usuário, se o e-mail estiver disponível
+            // Confirmation email to the user (if email is provided)
             if (formData.email) {
                 await transporter.sendMail({
                     from: process.env.EMAIL_USER,
@@ -129,15 +77,13 @@ export default async function handler(req, res) {
                 });
             }
 
-            // Resposta para o cliente
             res.status(200).json({ protocolo });
-
         } catch (error) {
             console.error('Erro ao enviar e-mail:', error);
             res.status(500).json({ message: 'Erro ao enviar e-mail.' });
         }
     } else {
         res.setHeader('Allow', ['POST']);
-        res.status(405).end(`Método ${req.method} não permitido`);
+        res.status(405).end(`Método ${req.method} não permitido.`);
     }
 }
