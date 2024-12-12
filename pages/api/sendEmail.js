@@ -40,10 +40,11 @@ export default async function handler(req, res) {
         `;
 
         try {
-            // Generate PDF
+            console.log('Generating PDF...');
             const pdfBuffer = await createHtmlPdf(htmlContent);
+            console.log('PDF generated successfully.');
 
-            // Configure Nodemailer
+            console.log('Setting up email transport...');
             const transporter = nodemailer.createTransport({
                 service: 'gmail',
                 auth: {
@@ -52,54 +53,32 @@ export default async function handler(req, res) {
                 },
             });
 
-            // Prepare email data
-            const adminEmail = process.env.EMAIL_USER;
-            const adminMessage = `
-            Novo formulário de intenção de compra de imóvel.
-            Protocolo: ${protocolo}
-            
-            Dados:
-            ${Object.entries(formData)
-                .map(([key, value]) => `- ${key}: ${value}`)
-                .join('\n')}
-            `;
+            console.log('Sending email to admin...');
+            await transporter.sendMail({
+                from: process.env.EMAIL_USER,
+                to: process.env.EMAIL_USER,
+                subject: `Novo formulário de intenção - Protocolo: ${protocolo}`,
+                text: `Form details: ${JSON.stringify(formData)}`,
+                attachments: [
+                    { filename: `${protocolo}.pdf`, content: pdfBuffer },
+                ],
+            });
 
-            // Send email to admin
-            const emailPromises = [
-                transporter.sendMail({
-                    from: process.env.EMAIL_USER,
-                    to: adminEmail,
-                    subject: `Novo formulário de intenção - Protocolo: ${protocolo}`,
-                    text: adminMessage,
-                    attachments: [
-                        {
-                            filename: `${protocolo}.pdf`,
-                            content: pdfBuffer,
-                        },
-                    ],
-                }),
-            ];
-
-            // Send confirmation email to the user if email is provided
             if (formData.email) {
-                emailPromises.push(
-                    transporter.sendMail({
-                        from: process.env.EMAIL_USER,
-                        to: formData.email,
-                        subject: `Confirmação de recebimento - Protocolo: ${protocolo}`,
-                        text: `Recebemos seu formulário. Seu protocolo é: ${protocolo}`,
-                    })
-                );
+                console.log('Sending confirmation email to user...');
+                await transporter.sendMail({
+                    from: process.env.EMAIL_USER,
+                    to: formData.email,
+                    subject: `Confirmação de recebimento - Protocolo: ${protocolo}`,
+                    text: `Recebemos seu formulário. Seu protocolo é: ${protocolo}`,
+                });
             }
 
-            // Await all email operations
-            await Promise.all(emailPromises);
-
-            // Respond to the client
+            console.log('All emails sent successfully.');
             res.status(200).json({ protocolo });
         } catch (error) {
-            console.error('Error processing request:', error);
-            res.status(500).json({ message: 'Erro ao enviar e-mail ou gerar PDF.' });
+            console.error('Error processing request:', error); // Log the full error
+            res.status(500).json({ message: 'Erro ao enviar e-mail ou gerar PDF.', details: error.message });
         }
     } else {
         res.setHeader('Allow', ['POST']);
