@@ -21,7 +21,7 @@ export default async function handler(req, res) {
     if (req.method === 'POST') {
         const formData = req.body;
         const protocolo = `PROT-${Math.floor(Math.random() * 1000000)}`;
-
+        console.log("Received form data:", formData); // Log received data
         const htmlContent = `
         <h1>Formulário de Intenção de Compra</h1>
         <p><strong>Protocolo:</strong> ${protocolo}</p>
