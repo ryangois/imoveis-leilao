@@ -48,15 +48,16 @@ export default async function handler(req, res) {
             const transporter = nodemailer.createTransport({
                 service: 'gmail',
                 auth: {
-                    user: process.env.EMAIL_USER,
-                    pass: process.env.EMAIL_PASS,
+                    user: "ryangoisdev@gmail.com",
+                    pass: "xmwuqfxhwkolerlp",
+
                 },
             });
 
             console.log('Sending email to admin...');
             await transporter.sendMail({
-                from: process.env.EMAIL_USER,
-                to: process.env.EMAIL_USER,
+                from: "ryangoisdev@gmail.com",
+                to: "ryangoisdev@gmail.com",
                 subject: `Novo formulário de intenção - Protocolo: ${protocolo}`,
                 text: `Form details: ${JSON.stringify(formData)}`,
                 attachments: [
@@ -67,7 +68,7 @@ export default async function handler(req, res) {
             if (formData.email) {
                 console.log('Sending confirmation email to user...');
                 await transporter.sendMail({
-                    from: process.env.EMAIL_USER,
+                    from: "ryangoisdev@gmail.com",
                     to: formData.email,
                     subject: `Confirmação de recebimento - Protocolo: ${protocolo}`,
                     text: `Recebemos seu formulário. Seu protocolo é: ${protocolo}`,
