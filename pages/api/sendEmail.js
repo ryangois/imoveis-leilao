@@ -2,41 +2,48 @@ import chromium from 'chrome-aws-lambda';
 import nodemailer from 'nodemailer';
 
 async function createHtmlPdf(htmlContent) {
-    const browser = await chromium.puppeteer.launch({
-        args: chromium.args,
-        executablePath: await chromium.executablePath,
-        headless: true,
-    });
+    let browser;
+    try {
+        browser = await chromium.puppeteer.launch({
+            args: chromium.args,
+            executablePath: await chromium.executablePath,
+            headless: chromium.headless,
+        });
 
-    const page = await browser.newPage();
-    await page.setContent(htmlContent);
+        const page = await browser.newPage();
+        await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
 
-    const pdfBuffer = await page.pdf({ format: 'A4' });
-    await browser.close();
-
-    return pdfBuffer;
+        const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
+        return pdfBuffer;
+    } catch (error) {
+        console.error('Error creating PDF:', error);
+        throw new Error('Failed to generate PDF.');
+    } finally {
+        if (browser) await browser.close();
+    }
 }
 
 export default async function handler(req, res) {
     if (req.method === 'POST') {
         const formData = req.body;
         const protocolo = `PROT-${Math.floor(Math.random() * 1000000)}`;
-        console.log("Received form data:", formData); // Log received data
+        console.log('Received form data:', formData);
+
         const htmlContent = `
-        <h1>Formulário de Intenção de Compra</h1>
-        <p><strong>Protocolo:</strong> ${protocolo}</p>
-        <ul>
-            ${Object.entries(formData)
-                .map(([key, value]) => `<li><strong>${key}:</strong> ${value}</li>`)
-                .join('')}
-        </ul>
+            <h1>Formulário de Intenção de Compra</h1>
+            <p><strong>Protocolo:</strong> ${protocolo}</p>
+            <ul>
+                ${Object.entries(formData)
+                    .map(([key, value]) => `<li><strong>${key}:</strong> ${value}</li>`)
+                    .join('')}
+            </ul>
         `;
 
         try {
-            // Generate PDF from HTML
+            // Generate PDF
             const pdfBuffer = await createHtmlPdf(htmlContent);
 
-            // Configure Nodemailer transport
+            // Configure Nodemailer
             const transporter = nodemailer.createTransport({
                 service: 'gmail',
                 auth: {
@@ -45,42 +52,54 @@ export default async function handler(req, res) {
                 },
             });
 
-            // Email to administrator
+            // Prepare email data
+            const adminEmail = process.env.EMAIL_USER;
             const adminMessage = `
             Novo formulário de intenção de compra de imóvel.
             Protocolo: ${protocolo}
             
             Dados:
-            ${formatFormDataWithBullets(formData)}
+            ${Object.entries(formData)
+                .map(([key, value]) => `- ${key}: ${value}`)
+                .join('\n')}
             `;
 
-            await transporter.sendMail({
-                from: process.env.EMAIL_USER,
-                to: process.env.EMAIL_USER,
-                subject: `Novo formulário de intenção - Protocolo: ${protocolo}`,
-                text: adminMessage,
-                attachments: [
-                    {
-                        filename: `${protocolo}.pdf`,
-                        content: pdfBuffer,
-                    },
-                ],
-            });
-
-            // Confirmation email to the user (if email is provided)
-            if (formData.email) {
-                await transporter.sendMail({
+            // Send email to admin
+            const emailPromises = [
+                transporter.sendMail({
                     from: process.env.EMAIL_USER,
-                    to: formData.email,
-                    subject: `Confirmação de recebimento - Protocolo: ${protocolo}`,
-                    text: `Recebemos seu formulário. Seu protocolo é: ${protocolo}`,
-                });
+                    to: adminEmail,
+                    subject: `Novo formulário de intenção - Protocolo: ${protocolo}`,
+                    text: adminMessage,
+                    attachments: [
+                        {
+                            filename: `${protocolo}.pdf`,
+                            content: pdfBuffer,
+                        },
+                    ],
+                }),
+            ];
+
+            // Send confirmation email to the user if email is provided
+            if (formData.email) {
+                emailPromises.push(
+                    transporter.sendMail({
+                        from: process.env.EMAIL_USER,
+                        to: formData.email,
+                        subject: `Confirmação de recebimento - Protocolo: ${protocolo}`,
+                        text: `Recebemos seu formulário. Seu protocolo é: ${protocolo}`,
+                    })
+                );
             }
 
+            // Await all email operations
+            await Promise.all(emailPromises);
+
+            // Respond to the client
             res.status(200).json({ protocolo });
         } catch (error) {
-            console.error('Erro ao enviar e-mail:', error);
-            res.status(500).json({ message: 'Erro ao enviar e-mail.' });
+            console.error('Error processing request:', error);
+            res.status(500).json({ message: 'Erro ao enviar e-mail ou gerar PDF.' });
         }
     } else {
         res.setHeader('Allow', ['POST']);
