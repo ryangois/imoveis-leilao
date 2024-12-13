@@ -13,7 +13,7 @@ function formatFormDataWithBullets(formData) {
         estadosSelecionados: 'Estados Selecionados',
         cidadesSelecionadas: 'Cidades Selecionadas',
         bairrosSelecionados: 'Bairros Selecionados',
-        // Adicione outros campos conforme necessário
+      
     };
 
     return Object.entries(formData)
