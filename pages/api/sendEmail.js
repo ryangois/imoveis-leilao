@@ -1,91 +1,134 @@
-import chromium from 'chrome-aws-lambda';
 import nodemailer from 'nodemailer';
+import PDFDocument from 'pdfkit';
 
-async function createHtmlPdf(htmlContent) {
-    let browser;
-    try {
-        browser = await chromium.puppeteer.launch({
-            args: chromium.args,
-            executablePath: await chromium.executablePath,
-            headless: chromium.headless,
-        });
+// Função para formatar os dados do formulário com bullets
+function formatFormDataWithBullets(formData) {
+    const fieldLabels = {
+        nome: 'Nome',
+        email: 'Email',
+        telefone: 'Telefone',
+        estadoImportante: 'Estado Importante',
+        objetivo: 'Objetivo',
+        tipoImovel: 'Tipo de Imóvel',
+        estadosSelecionados: 'Estados Selecionados',
+        cidadesSelecionadas: 'Cidades Selecionadas',
+        bairrosSelecionados: 'Bairros Selecionados',
+        // Adicione outros campos conforme necessário
+    };
 
-        const page = await browser.newPage();
-        await page.setContent(htmlContent, { waitUntil: 'networkidle2' });
+    return Object.entries(formData)
+        .map(([key, value]) => {
+            let formattedValue = "";
 
-        const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
-        return pdfBuffer;
-    } catch (error) {
-        console.error('Error creating PDF:', error);
-        throw new Error('Failed to generate PDF.');
-    } finally {
-        if (browser) await browser.close();
-    }
+            if (Array.isArray(value)) {
+                formattedValue = value
+                    .map((item) => (typeof item === 'object' && item.label ? item.label : item))
+                    .join(', ');
+            } else if (typeof value === "object") {
+                formattedValue = Object.entries(value)
+                    .map(([subKey, subValue]) => ${subKey}: ${subValue})
+                    .join(', ');
+            } else {
+                formattedValue = value ?? "Não informado";
+            }
+
+            return • ${fieldLabels[key] || key}: ${formattedValue};
+        })
+        .join('\n\n');
+}
+
+// Função para criar o PDF em buffer
+async function createPdf(formData, protocolo) {
+    const doc = new PDFDocument();
+    const chunks = [];
+
+    doc.on('data', (chunk) => chunks.push(chunk));
+    doc.on('end', () => console.log('PDF criado com sucesso'));
+
+    // Adiciona título e protocolo
+    doc.fontSize(16).text('Formulário de Intenção de Compra de Imóvel', { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(12).text(Protocolo: ${protocolo});
+    doc.moveDown();
+
+    // Adiciona dados do formulário
+    doc.text('Dados do Formulário:', { underline: true });
+    doc.moveDown();
+
+    // Formata e escreve os dados no PDF
+    const formattedFormData = formatFormDataWithBullets(formData);
+    doc.fontSize(10).text(formattedFormData, { align: 'left', lineGap: 6 });
+
+    // Finaliza o PDF
+    doc.end();
+
+    return new Promise((resolve, reject) => {
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
+        doc.on('error', (err) => reject(err));
+    });
 }
 
 export default async function handler(req, res) {
-    if (req.method !== 'POST') {
-        res.setHeader('Allow', ['POST']);
-        return res.status(405).end(`Method ${req.method} Not Allowed.`);
-    }
+    if (req.method === 'POST') {
+        const formData = req.body;
+        const protocolo = PROT-${Math.floor(Math.random() * 1000000)};
 
-    const formData = req.body;
-    const protocolo = `PROT-${Math.floor(Math.random() * 1000000)}`;
-    console.log('Received form data:', formData);
+        console.log("Dados recebidos no formulário:", formData);
 
-    const htmlContent = `
-        <h1>Formulário de Intenção de Compra</h1>
-        <p><strong>Protocolo:</strong> ${protocolo}</p>
-        <ul>
-            ${Object.entries(formData)
-                .map(([key, value]) => `<li><strong>${key}:</strong> ${value || 'Não informado'}</li>`)
-                .join('')}
-        </ul>
-    `;
+        try {
+            const transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: {
+                    user: process.env.EMAIL_USER,
+                    pass: process.env.EMAIL_PASS,
+                },
+            });
 
-    try {
-        // Generate PDF
-        console.log('Generating PDF...');
-        const pdfBuffer = await createHtmlPdf(htmlContent);
-        console.log('PDF generated successfully.');
+            // Cria o PDF em buffer
+            const pdfBuffer = await createPdf(formData, protocolo);
+            console.log('PDF gerado em buffer');
 
-        // Configure Nodemailer
-        console.log('Setting up email transport...');
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS,
-            },
-        });
+            const adminMessage = `
+            Novo formulário de intenção de compra de imóvel.
+            Protocolo: ${protocolo}
+            
+            Dados:
+            ${formatFormDataWithBullets(formData)}
+            `;
 
-        // Send email to admin
-        console.log('Sending email to admin...');
-        await transporter.sendMail({
-            from: process.env.EMAIL_USER,
-            to: process.env.EMAIL_USER,
-            subject: `Novo formulário de intenção - Protocolo: ${protocolo}`,
-            text: `Form details: ${JSON.stringify(formData)}`,
-            attachments: [
-                { filename: `${protocolo}.pdf`, content: pdfBuffer },
-            ],
-        });
-
-        // Send confirmation email to user (if email is provided)
-        if (formData.email) {
-            console.log('Sending confirmation email to user...');
+            // Envia e-mail para o administrador com o PDF em anexo
             await transporter.sendMail({
                 from: process.env.EMAIL_USER,
-                to: formData.email,
-                subject: `Confirmação de recebimento - Protocolo: ${protocolo}`,
-                text: `Recebemos seu formulário. Seu protocolo é: ${protocolo}`,
+                to: process.env.EMAIL_USER,
+                subject: Novo formulário de intenção - Protocolo: ${protocolo},
+                text: adminMessage,
+                attachments: [
+                    {
+                        filename: ${protocolo}.pdf,
+                        content: pdfBuffer,
+                    },
+                ],
             });
-        }
 
-        console.log('All emails sent successfully.');
-        res.status(200).json({ protocolo });
-    } catch (error) {
-        console.error('Error processing request:', error);
-        res.status(500).json({ message: 'Erro ao enviar e-mail ou gerar PDF.', details: error.message });
+            // Envia confirmação ao usuário, se o e-mail estiver disponível
+            if (formData.email) {
+                await transporter.sendMail({
+                    from: process.env.EMAIL_USER,
+                    to: formData.email,
+                    subject: Confirmação de recebimento - Protocolo: ${protocolo},
+                    text: Recebemos seu formulário. Seu protocolo é: ${protocolo},
+                });
+            }
+
+            // Resposta para o cliente
+            res.status(200).json({ protocolo });
+
+        } catch (error) {
+            console.error('Erro ao enviar e-mail:', error);
+            res.status(500).json({ message: 'Erro ao enviar e-mail.' });
+        }
+    } else {
+        res.setHeader('Allow', ['POST']);
+        res.status(405).end(Método ${req.method} não permitido);
     }
 }
