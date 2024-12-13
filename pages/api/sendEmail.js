@@ -48,7 +48,7 @@ async function createPdf(formData, protocolo) {
     // Adiciona título e protocolo
     doc.fontSize(16).text('Formulário de Intenção de Compra de Imóvel', { align: 'center' });
     doc.moveDown();
-    doc.fontSize(12).text(Protocolo: ${protocolo});
+    doc.fontSize(12).text(`Protocolo: ${protocolo}`);
     doc.moveDown();
 
     // Adiciona dados do formulário
@@ -100,11 +100,11 @@ export default async function handler(req, res) {
             await transporter.sendMail({
                 from: process.env.EMAIL_USER,
                 to: process.env.EMAIL_USER,
-                subject: Novo formulário de intenção - Protocolo: ${protocolo},
+               subject: `Novo formulário de intenção - Protocolo: ${protocolo}`,
                 text: adminMessage,
                 attachments: [
                     {
-                        filename: ${protocolo}.pdf,
+                        filename: `${protocolo}.pdf`,
                         content: pdfBuffer,
                     },
                 ],
@@ -115,7 +115,7 @@ export default async function handler(req, res) {
                 await transporter.sendMail({
                     from: process.env.EMAIL_USER,
                     to: formData.email,
-                    subject: Confirmação de recebimento - Protocolo: ${protocolo},
+                    subject: `Confirmação de recebimento - Protocolo: ${protocolo}`,
                     text: Recebemos seu formulário. Seu protocolo é: ${protocolo},
                 });
             }
